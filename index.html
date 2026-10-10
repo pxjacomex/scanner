@@ -1021,7 +1021,7 @@
   <div class="content">
     <div class="spinner"></div>
     <h2>Cargando motor de visión</h2>
-    <p>OpenCV.js se está descargando (~8 MB). Solo se carga la primera vez. Una vez cargado, la app funciona sin internet.</p>
+    <p>OpenCV.js se está descargando (~10 MB). Solo se carga la primera vez. Una vez cargado, la app funciona sin internet.</p>
   </div>
 </div>
 
@@ -1317,7 +1317,9 @@
     }
   };
 </script>
-<script async src="https://docs.opencv.org/4.10.0/opencv.js" id="opencvScript" onerror="cvLoadError()"></script>
+<!-- Copia propia del build oficial de OpenCV.js (ver CLAUDE.md). Se sirve desde
+     este mismo sitio: no depende de que docs.opencv.org conserve la URL. -->
+<script async src="vendor/opencv.js" id="opencvScript" onerror="cvLoadError()"></script>
 
 <script>
 // ============================================
@@ -1669,7 +1671,7 @@ function cvLoadError() {
 // guarda su archivo en la misma caché que usa sw.js, para que el modo sin
 // conexión funcione ya desde la segunda apertura.
 // Debe coincidir con VENDOR_CACHE en sw.js.
-const VENDOR_CACHE = 'omr-vendor-v1';
+const VENDOR_CACHE = 'omr-vendor-v2';  // v2: OpenCV.js servido desde vendor/ (antes CDN)
 
 function offlineSupported() {
   // Service Worker y Cache API solo existen en contextos seguros
@@ -1708,8 +1710,7 @@ async function ensureOpenCVCached() {
     if (await cache.match(url, { ignoreVary: true })) return;
     // 'force-cache' reutiliza la copia que el navegador acaba de descargar para
     // la etiqueta <script> (si la conservó) y evita una segunda descarga de ~8 MB.
-    // La respuesta es de otro origen sin CORS ("opaca"): no se puede leer, pero
-    // la Cache API la guarda y el navegador la ejecuta sin problema.
+    // Normalmente sw.js ya la guardó al instalarse; esto es la segunda oportunidad.
     const resp = await fetch(url, { mode: 'no-cors', cache: 'force-cache' });
     if (resp.ok || resp.type === 'opaque') {
       await cache.put(url, resp);

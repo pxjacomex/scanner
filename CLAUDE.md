@@ -15,8 +15,8 @@ lectura de casilleros → nota). No hay backend, ni paso de build, ni `npm`.
      no fallar en silencio.
 2. **Sin paquetes poco conocidos, poco probados o de dudosa confiabilidad.**
    - No agregar plugins, frameworks ni complementos externos distintos de los
-     que ya tiene el proyecto original (OpenCV.js oficial de `docs.opencv.org`
-     y la fuente Outfit de Google Fonts).
+     que ya tiene el proyecto original (el build oficial de OpenCV.js, copiado
+     en `vendor/`, y la fuente Outfit de Google Fonts).
    - Preferir siempre APIs nativas del navegador (Canvas, File, Web Share,
      Cache Storage, Service Worker, localStorage) antes que librerías.
    - El service worker es código propio del proyecto (sin Workbox ni similares).
@@ -36,6 +36,8 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 |---|---|
 | `index.html` | Toda la app: CSS, HTML y JS en un solo archivo. |
 | `sw.js` | Service worker: deja la app utilizable sin conexión. |
+| `vendor/opencv.js` | Build oficial de OpenCV.js (4.x) servido desde este mismo sitio. `docs.opencv.org` retiró la URL `4.10.0/opencv.js` que usaba la app, por eso se aloja aquí. |
+| `.nojekyll` | Evita que GitHub Pages procese el sitio con Jekyll (sirve los archivos tal cual). |
 | `manifest.webmanifest`, `icons/` | Metadatos e iconos para instalar como app en Android. |
 | `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea. |
 
@@ -45,12 +47,14 @@ Además: la interfaz y los comentarios del código están en **español**; mante
   `omr-shell-<VERSION>`), y los sirve con *stale-while-revalidate*: carga al
   instante desde caché y, si hay red, busca una versión nueva en segundo plano.
   Si el HTML cambió, avisa a la página y esta muestra un toast para recargar.
-- OpenCV.js (≈8 MB, CDN `docs.opencv.org`) y las fuentes de Google se sirven
-  *cache-first* desde la caché `omr-vendor-v1`. Son respuestas de otro origen
-  (opacas); el navegador puede ejecutarlas aunque el JS no pueda leerlas.
+- OpenCV.js (`vendor/opencv.js`, ≈10 MB) y las fuentes de Google se sirven
+  *cache-first* desde la caché `omr-vendor-v2`. El worker guarda OpenCV.js al
+  instalarse (normalmente sale de la caché HTTP, sin segunda descarga), así que
+  el modo sin conexión funciona desde la **primera** visita completa. Las fuentes
+  son respuestas de otro origen (opacas); el navegador puede usarlas aunque el
+  JS no pueda leerlas.
 - Cuando OpenCV termina de cargar, `index.html` (función `ensureOpenCVCached`)
-  guarda el archivo en `omr-vendor-v1` usando la Cache API, de modo que el modo
-  sin conexión ya funcione desde la **segunda** apertura de la app.
+  comprueba que el archivo esté en `omr-vendor-v2` y, si falta, lo guarda.
 - Si OpenCV.js falla al cargar (`cvLoadError`), se borra la copia en caché por si
   estaba corrupta y se muestra un mensaje distinto según haya o no conexión.
 - Service Worker y Cache API solo existen en contextos seguros (`https://` o
@@ -73,8 +77,10 @@ cachés; marcar "Offline" y recargar para comprobar el modo sin conexión.
   página avisa de la nueva versión.
 - Si cambias la lista de archivos del shell (manifest, iconos) o quieres forzar
   una limpieza de caché en los dispositivos, sube `VERSION` en `sw.js`.
-- Si cambias la URL o versión de OpenCV.js, hazlo solo en la etiqueta
-  `<script id="opencvScript">` de `index.html`. Para descartar la copia antigua
-  en los dispositivos, sube el sufijo de `VENDOR_CACHE` en `sw.js` **y** en
-  `index.html` (deben coincidir).
+- Para actualizar OpenCV.js, reemplaza `vendor/opencv.js` por el build oficial
+  nuevo (4.x; descargar de `https://docs.opencv.org/4.x/opencv.js` o de la
+  carpeta de la versión concreta) y sube el sufijo de `VENDOR_CACHE` en `sw.js`
+  **y** en `index.html` (deben coincidir) para que los dispositivos descarten la
+  copia antigua. Si cambias la ruta, actualízala en la etiqueta
+  `<script id="opencvScript">` y en `OPENCV_URL` de `sw.js`.
 - No introducir dependencias nuevas sin discutirlo primero (lineamiento 2).

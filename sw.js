@@ -8,8 +8,10 @@
  *  - Shell de la app (index.html, manifest, iconos): stale-while-revalidate.
  *    Se sirve al instante desde caché; si hay red se busca una versión nueva en
  *    segundo plano y, si el HTML cambió, se avisa a las pestañas abiertas.
- *  - Recursos de terceros grandes y estables (OpenCV.js, fuentes de Google):
- *    cache-first. Se descargan una vez y se reutilizan siempre.
+ *  - Recursos grandes y estables (OpenCV.js en vendor/, fuentes de Google):
+ *    cache-first. Se descargan una vez y se reutilizan siempre. OpenCV.js se
+ *    guarda ya al instalar el worker, así el modo sin conexión funciona desde
+ *    la primera visita.
  *
  * Nota: las respuestas de otro origen sin CORS son "opacas" (status 0). El
  * navegador puede ejecutarlas como <script>/CSS aunque el JS no pueda leerlas,
@@ -22,7 +24,7 @@ const SHELL_CACHE = 'omr-shell-' + VERSION;
 // Caché aparte para OpenCV.js y fuentes: no se borra al subir VERSION, así no
 // se vuelven a descargar ~8 MB con cada cambio de la app. Debe coincidir con la
 // constante VENDOR_CACHE de index.html.
-const VENDOR_CACHE = 'omr-vendor-v1';
+const VENDOR_CACHE = 'omr-vendor-v2';  // v2: OpenCV.js servido desde vendor/ (antes CDN)
 
 const SHELL_ASSETS = [
   './',
@@ -33,16 +35,21 @@ const SHELL_ASSETS = [
   './icons/icon-512-maskable.png',
 ];
 
-const VENDOR_HOSTS = ['docs.opencv.org', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const VENDOR_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 const INDEX_URL = new URL('./index.html', self.location.href).href;
+// Copia propia del build oficial de OpenCV.js (misma ruta que en index.html).
+const OPENCV_URL = new URL('./vendor/opencv.js', self.location.href).href;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL_CACHE)
-      .then((cache) => cache.addAll(SHELL_ASSETS))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(Promise.all([
+    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_ASSETS)),
+    // OpenCV.js: solo si aún no está (la página acaba de descargarlo para la
+    // etiqueta <script>, así que casi siempre sale de la caché HTTP del navegador).
+    caches.open(VENDOR_CACHE).then(async (cache) => {
+      if (!(await cache.match(OPENCV_URL, { ignoreVary: true }))) await cache.add(OPENCV_URL);
+    }),
+  ]).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
