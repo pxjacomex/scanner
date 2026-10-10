@@ -1,9 +1,10 @@
 # Calificador OMR — guía del proyecto
 
-App web de **una sola página** (`index.html`) que califica plantillas de examen
-tipo OMR a partir de una foto tomada con el celular. Todo el procesamiento ocurre
-en el navegador con OpenCV.js (detección de marcadores ArUco → rectificación →
-lectura de casilleros → nota). No hay backend, ni paso de build, ni `npm`.
+App web de **una sola página** (`index.html` + `css/` + `js/`) que califica
+plantillas de examen tipo OMR a partir de una foto tomada con el celular. Todo el
+procesamiento ocurre en el navegador con OpenCV.js (detección de marcadores
+ArUco → rectificación → lectura de casilleros → nota). No hay backend, ni paso
+de build, ni `npm`: los archivos se sirven tal cual.
 
 ## Lineamientos del proyecto (obligatorios)
 
@@ -34,19 +35,47 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 
 | Archivo | Para qué |
 |---|---|
-| `index.html` | Toda la app: CSS, HTML y JS en un solo archivo. |
+| `index.html` | Solo HTML: pantallas, modales y las etiquetas que cargan css/ y js/. |
+| `css/estilos.css` | Todos los estilos. |
+| `js/estado.js` | Estado global (`STATE`, `DEBUG`), parámetros del detector, geometría, calibración, parches de tono y su persistencia en `localStorage`. |
+| `js/motor.js` | Carga de OpenCV.js (`Module`, `onCVReady`, `cvLoadError`) y modo sin conexión (service worker, caché, aviso de versión). |
+| `js/app.js` | `initApp`, pestañas, modales, toasts. |
+| `js/camara.js` | Captura de la foto y flujo captura → pipeline → resultado (`processImage`). |
+| `js/deteccion.js` | `runPipeline` y todo el procesamiento de imagen: ArUco, rectificación, LUT de tonos, features, clasificación, anotación. Sin DOM. |
+| `js/calificacion.js` | Resultado del escaneo, tabla de resultados, duplicados, clave de respuestas y notas. |
+| `js/exportacion.js` | CSV, compartir (Web Share) y ver/descargar la imagen rectificada. |
+| `js/calibracion.js` | Pestaña Calibrar (coordenadas de casilleros con vista previa). |
+| `js/parametros.js` | Pestaña Detector (sliders, parches de tono, previews, reclasificación en vivo). |
 | `sw.js` | Service worker: deja la app utilizable sin conexión. |
 | `vendor/opencv.js` | Build oficial de OpenCV.js (4.x) servido desde este mismo sitio. `docs.opencv.org` retiró la URL `4.10.0/opencv.js` que usaba la app, por eso se aloja aquí. |
 | `.nojekyll` | Evita que GitHub Pages procese el sitio con Jekyll (sirve los archivos tal cual). |
 | `manifest.webmanifest`, `icons/` | Metadatos e iconos para instalar como app en Android. |
 | `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea. |
 
+## Cómo están organizados los scripts
+
+- Son **scripts clásicos** (sin `type="module"`, sin bundler) que comparten el
+  ámbito global: las funciones de un archivo se llaman desde otro y desde los
+  `onclick` del HTML. Las constantes/`let` de nivel superior (`STATE`,
+  `CALIBRATION`, `COORDS`, `GEOM`…) también son compartidas.
+- El **orden de carga** en `index.html` es: `estado` → `motor` → `app` →
+  `camara` → `deteccion` → `calificacion` → `exportacion` → `calibracion` →
+  `parametros`, y al final `vendor/opencv.js` (`async`). Solo `estado.js` ejecuta
+  código al cargarse que otros necesitan; el resto son definiciones que se usan
+  cuando OpenCV ya inicializó (`onCVReady` → `initApp`).
+- Al **añadir un archivo** a `css/` o `js/`: enlazarlo en `index.html`, añadirlo a
+  `SHELL_ASSETS` en `sw.js` y subir `VERSION` (si no, no estará disponible sin
+  conexión).
+- Regla de reparto: `deteccion.js` no toca el DOM; el DOM lo tocan las pantallas
+  (`calificacion`, `calibracion`, `parametros`, `camara`) y `app.js`.
+
 ## Modo sin conexión (cómo está resuelto)
 
-- `sw.js` guarda `index.html`, el manifest y los iconos al instalarse (caché
-  `omr-shell-<VERSION>`), y los sirve con *stale-while-revalidate*: carga al
-  instante desde caché y, si hay red, busca una versión nueva en segundo plano.
-  Si el HTML cambió, avisa a la página y esta muestra un toast para recargar.
+- `sw.js` guarda `index.html`, `css/`, `js/`, el manifest y los iconos al
+  instalarse (caché `omr-shell-<VERSION>`), y los sirve con *stale-while-
+  revalidate*: carga al instante desde caché y, si hay red, busca una versión
+  nueva en segundo plano. Si algún archivo de texto cambió, avisa a la página y
+  esta muestra un toast para recargar.
 - OpenCV.js (`vendor/opencv.js`, ≈10 MB) y las fuentes de Google se sirven
   *cache-first* desde la caché `omr-vendor-v2`. El worker guarda OpenCV.js al
   instalarse (normalmente sale de la caché HTTP, sin segunda descarga), así que
@@ -73,14 +102,15 @@ cachés; marcar "Offline" y recargar para comprobar el modo sin conexión.
 
 ## Al hacer cambios
 
-- Cambiar `index.html` **no** exige tocar `sw.js`: el shell se renueva solo y la
-  página avisa de la nueva versión.
-- Si cambias la lista de archivos del shell (manifest, iconos) o quieres forzar
-  una limpieza de caché en los dispositivos, sube `VERSION` en `sw.js`.
+- Cambiar `index.html`, `css/` o `js/` **no** exige tocar `sw.js`: el shell se
+  renueva solo y la página avisa de la nueva versión.
+- Si añades o quitas archivos del shell (css, js, manifest, iconos) o quieres
+  forzar una limpieza de caché en los dispositivos, actualiza `SHELL_ASSETS` y
+  sube `VERSION` en `sw.js`.
 - Para actualizar OpenCV.js, reemplaza `vendor/opencv.js` por el build oficial
   nuevo (4.x; descargar de `https://docs.opencv.org/4.x/opencv.js` o de la
   carpeta de la versión concreta) y sube el sufijo de `VENDOR_CACHE` en `sw.js`
-  **y** en `index.html` (deben coincidir) para que los dispositivos descarten la
+  **y** en `js/motor.js` (deben coincidir) para que los dispositivos descarten la
   copia antigua. Si cambias la ruta, actualízala en la etiqueta
   `<script id="opencvScript">` y en `OPENCV_URL` de `sw.js`.
 - No introducir dependencias nuevas sin discutirlo primero (lineamiento 2).
