@@ -181,6 +181,15 @@ function renderScanResult() {
       }
       txt += `\n`;
     }
+    // Rectificación
+    if (DEBUG.rectificacion) {
+      const r = DEBUG.rectificacion;
+      if (r.modo === 'dos_mitades') {
+        txt += `Rectificación: dos mitades (marcadores ${r.marcadores.join(',')}) · desvío centrales 4→${r.desvioCentral_mm[4].toFixed(2)} mm, 5→${r.desvioCentral_mm[5].toFixed(2)} mm\n\n`;
+      } else {
+        txt += `Rectificación: homografía única (marcadores ${r.marcadores.join(',')})${r.motivo ? ' · ' + r.motivo : ''}\n\n`;
+      }
+    }
     // Anclaje a los cuadros impresos
     if (DEBUG.anclaje) {
       const a = DEBUG.anclaje;
