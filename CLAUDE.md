@@ -41,7 +41,7 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `js/motor.js` | Carga de OpenCV.js (`Module`, `onCVReady`, `cvLoadError`) y modo sin conexión (service worker, caché, aviso de versión). |
 | `js/app.js` | `initApp`, pestañas, modales, toasts. |
 | `js/camara.js` | Captura de la foto y flujo captura → pipeline → resultado (`processImage`). |
-| `js/deteccion.js` | `runPipeline` y todo el procesamiento de imagen: ArUco, rectificación, LUT de tonos, features, clasificación, anotación. Sin DOM. |
+| `js/deteccion.js` | `runPipeline` y todo el procesamiento de imagen: ArUco, rectificación, anclaje a los cuadros impresos, LUT de tonos, features, clasificación, anotación. Sin DOM. |
 | `js/calificacion.js` | Resultado del escaneo, tabla de resultados, duplicados, clave de respuestas y notas. |
 | `js/exportacion.js` | CSV, compartir (Web Share) y ver/descargar la imagen rectificada. |
 | `js/calibracion.js` | Pestaña Calibrar (coordenadas de casilleros con vista previa). |
@@ -51,6 +51,7 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `.nojekyll` | Evita que GitHub Pages procese el sitio con Jekyll (sirve los archivos tal cual). |
 | `manifest.webmanifest`, `icons/` | Metadatos e iconos para instalar como app en Android. |
 | `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea. |
+| `pruebas/` | Fotos reales con el resultado esperado en el nombre, `fotos.json` y `regresion.html` (página que las pasa por el pipeline y compara; ver `pruebas/README.md`). No se cachea sin conexión. |
 
 ## Cómo están organizados los scripts
 
@@ -68,6 +69,28 @@ Además: la interfaz y los comentarios del código están en **español**; mante
   conexión).
 - Regla de reparto: `deteccion.js` no toca el DOM; el DOM lo tocan las pantallas
   (`calificacion`, `calibracion`, `parametros`, `camara`) y `app.js`.
+
+## Cómo lee la hoja (y por qué hay anclaje)
+
+- Los 4 ArUco de los extremos dan la homografía que rectifica la cabecera a
+  205 × 22 mm (15 px/mm). Las celdas se leen en coordenadas calibradas
+  (`CALIBRATION` → `COORDS`) midiendo la fracción de píxeles oscuros sobre la
+  imagen normalizada con la LUT de los 4 parches de tono.
+- Con la hoja doblada o la foto distorsionada, una homografía de 4 puntos deja
+  el centro corrido varios mm (medido: 3,75 mm con casillas de 4,2 mm y paso
+  de 6,7 mm). Por eso, antes de medir, `aplicarAnclaje` (en `js/deteccion.js`)
+  detecta los cuadros impresos (umbral adaptativo + contornos), busca para cada
+  fila el desplazamiento que hace coincidir más celdas con un cuadro, centra
+  cada celda en su cuadro y localiza la tira de parches con una plantilla de 4
+  bandas. El resultado queda en `STATE.coordsLectura` / `STATE.anclaje`;
+  `getCoordsLectura()` es lo que usan `extractFeatures` y la anotación.
+- Parámetro `anclaje_mm` (Detector → "③ Anclaje"): radio de búsqueda en X; 0 lo
+  desactiva y la app vuelve a leer exactamente como antes. Al mover sliders de
+  calibración o del detector se vuelve a anclar (`reanclar()`).
+- Para comprobar cambios en el detector, abrir `pruebas/regresion.html`: pasa
+  las fotos de `pruebas/fotos.json` con y sin anclaje y compara con el nombre.
+  Añadir ahí cualquier foto problemática (convención de nombre en
+  `pruebas/README.md`).
 
 ## Modo sin conexión (cómo está resuelto)
 

@@ -128,6 +128,23 @@ function renderScanResult() {
     div.textContent = `⚠️ Hay valores dudosos: ${s.ambiguos.join(', ')}. Verifica visualmente antes de guardar.`;
     hintsArea.appendChild(div);
   }
+  // Aviso de hoja doblada / distorsión (el anclaje lo compensa, pero conviene revisar)
+  const anc = STATE.anclaje;
+  if (anc) {
+    const sinCuadros = Object.keys(anc.porGrupo).filter(g => anc.porGrupo[g].ancladas === 0);
+    if (anc.maxDesplazamiento_mm >= 2) {
+      const div = document.createElement('div');
+      div.className = 'hint';
+      div.textContent = `📐 La hoja parece doblada o la foto tiene distorsión: las casillas aparecen hasta ${anc.maxDesplazamiento_mm.toFixed(1)} mm fuera de su posición calibrada. Se corrigió automáticamente anclándolas a los cuadros impresos; revisa la imagen rectificada.`;
+      hintsArea.appendChild(div);
+    }
+    if (sinCuadros.length > 0) {
+      const div = document.createElement('div');
+      div.className = 'hint warn';
+      div.textContent = `⚠️ No se encontraron los cuadros impresos de ${sinCuadros.join(', ')}; en ese grupo se usaron las coordenadas calibradas.`;
+      hintsArea.appendChild(div);
+    }
+  }
   if (s.F !== '?' && !todasClavesDefinidas) {
     const div = document.createElement('div');
     div.className = 'hint';
@@ -164,10 +181,24 @@ function renderScanResult() {
       }
       txt += `\n`;
     }
+    // Anclaje a los cuadros impresos
+    if (DEBUG.anclaje) {
+      const a = DEBUG.anclaje;
+      txt += `Anclaje a cuadros impresos (radio ${a.radio_mm} mm · ${a.cuadrosDetectados} cuadros detectados · máx. ${a.maxDesplazamiento_mm.toFixed(2)} mm):\n`;
+      for (const grupo of ['D1','D2','F','P1','P2','P3','P4','P5']) {
+        const r = a.porGrupo[grupo];
+        if (!r) continue;
+        txt += `  ${grupo.padEnd(2)}: dx=${r.dx_mm >= 0 ? '+' : ''}${r.dx_mm.toFixed(2)} dy=${r.dy_mm >= 0 ? '+' : ''}${r.dy_mm.toFixed(2)} mm (${r.ancladas}/${r.de} celdas con cuadro)\n`;
+      }
+      const p = a.parches;
+      txt += `  Parches: ${p.score >= ANCLAJE.PARCHE_SCORE_MIN ? `dx=${p.dx_mm >= 0 ? '+' : ''}${p.dx_mm.toFixed(2)} dy=${p.dy_mm >= 0 ? '+' : ''}${p.dy_mm.toFixed(2)} mm` : 'no localizados'} (correlación ${p.score.toFixed(2)})\n\n`;
+    } else if (STATE.detectorParams && !(STATE.detectorParams.anclaje_mm > 0)) {
+      txt += `Anclaje a cuadros impresos: desactivado\n\n`;
+    }
     if (DEBUG.classification) {
       const P = STATE.detectorParams;
       txt += `Parámetros del detector:\n`;
-      txt += `  Umbral oscuro: ${P.umbral_oscuro}  ·  FracMin: ${P.frac_min_pintada.toFixed(2)}  ·  FracMulti: ${P.frac_multi.toFixed(2)}  ·  ROI margen: ${P.roi_margin_pct.toFixed(2)}\n\n`;
+      txt += `  Umbral oscuro: ${P.umbral_oscuro}  ·  FracMin: ${P.frac_min_pintada.toFixed(2)}  ·  FracMulti: ${P.frac_multi.toFixed(2)}  ·  ROI margen: ${P.roi_margin_pct.toFixed(2)}  ·  Anclaje: ${(P.anclaje_mm || 0).toFixed(1)} mm\n\n`;
       txt += `Decisión por bloque (1°/2° con su frac_oscura):\n`;
       const det = DEBUG.classification.detalles;
       for (const grupo of ['D1','D2','F','P1','P2','P3','P4','P5']) {

@@ -73,6 +73,15 @@ const PARAM_SLIDERS = [
 
   // (Aquí entre ② y ③: se aplica la LUT a la imagen → grayNorm. Sin parámetros.)
 
+  // ETAPA ③ — ANCLAJE A LOS CUADROS IMPRESOS (compensa hojas dobladas)
+  {
+    grupo: '③ Anclaje a los cuadros impresos',
+    items: [
+      { path: 'anclaje_mm', label: 'Radio de búsqueda (mm)', min: 0, max: 8, step: 0.5, decimals: 1,
+        desc: 'Antes de medir, cada celda se centra en el cuadro impreso más cercano y la tira de parches se localiza en su posición real. Compensa hojas dobladas o fotos con distorsión. Es el radio en X alrededor de la posición calibrada (en Y, la mitad). 0 = desactivado. Default 6.' },
+    ],
+  },
+
   // ETAPA ④ — RECORTE DE CADA CELDA (geometría del casillero)
   {
     grupo: '④ Recorte de la celda',
@@ -221,6 +230,8 @@ function renderParamsUI() {
 // ==========================================================================
 
 const PARAM_PREVIEW_BUILDERS = {
+  // Anclaje a los cuadros impresos
+  'anclaje_mm':       buildPreviewAnclaje,
   // Decisión / ROI
   'umbral_oscuro':    buildPreviewUmbralOscuro,
   'frac_min_pintada': buildPreviewFracMin,
@@ -490,6 +501,7 @@ function buildPreviewPatchPosition(el, path) {
     return;
   }
   const tp = getTonePatches();
+  const dP = getParcheDesplazamiento();   // corrección del anclaje (0 si no hay)
   // El path tiene formato 'coords.<idx>.x' o 'coords.<idx>.y'
   const m = path.match(/^coords\.(\d+)\.(x|y)$/);
   const activeIdx = m ? parseInt(m[1], 10) : -1;
@@ -514,8 +526,8 @@ function buildPreviewPatchPosition(el, path) {
 
   for (let i = 0; i < 4; i++) {
     const c = tp.coords[i];
-    const cxp = Math.round(c.x * GEOM.PX_PER_MM);
-    const cyp = Math.round(c.y * GEOM.PX_PER_MM);
+    const cxp = Math.round((c.x + dP.dx) * GEOM.PX_PER_MM);
+    const cyp = Math.round((c.y + dP.dy) * GEOM.PX_PER_MM);
     const padPx = Math.round(PAD_MM * GEOM.PX_PER_MM);
     const cropW = wPx + padPx * 2;
     const cropH = hPx + padPx * 2;
@@ -572,6 +584,7 @@ function buildPreviewPatchRoiSize(el, path) {
     return;
   }
   const tp = getTonePatches();
+  const dP = getParcheDesplazamiento();   // corrección del anclaje (0 si no hay)
   const wPx = Math.round(tp.roi_w_mm * GEOM.PX_PER_MM);
   const hPx = Math.round(tp.roi_h_mm * GEOM.PX_PER_MM);
   const PAD_MM = 2.0;
@@ -591,8 +604,8 @@ function buildPreviewPatchRoiSize(el, path) {
 
   for (let i = 0; i < 4; i++) {
     const c = tp.coords[i];
-    const cxp = Math.round(c.x * GEOM.PX_PER_MM);
-    const cyp = Math.round(c.y * GEOM.PX_PER_MM);
+    const cxp = Math.round((c.x + dP.dx) * GEOM.PX_PER_MM);
+    const cyp = Math.round((c.y + dP.dy) * GEOM.PX_PER_MM);
     const padPx = Math.round(PAD_MM * GEOM.PX_PER_MM);
     const cropW = Math.max(wPx, 60) + padPx * 2;
     const cropH = Math.max(hPx, 40) + padPx * 2;
@@ -753,12 +766,44 @@ function buildPreviewLutCurve(el, path) {
 
 
 
+function buildPreviewAnclaje(el, path) {
+  if (!STATE.lastGrayRect) {
+    el.innerHTML = `<div class="pv-foot">Sin imagen disponible</div>`;
+    return;
+  }
+  const a = STATE.anclaje;
+  if (!a) {
+    el.innerHTML = `<div class="pv-foot">Anclaje desactivado: se leen las coordenadas calibradas tal cual.</div>`;
+    return;
+  }
+  const signo = (v) => (v >= 0 ? '+' : '') + v.toFixed(2);
+  let filas = '';
+  for (const g of ['D1', 'D2', 'F', 'P1', 'P2', 'P3', 'P4', 'P5']) {
+    const r = a.porGrupo[g];
+    if (!r) continue;
+    const desp = Math.hypot(r.dx_mm, r.dy_mm);
+    const color = r.ancladas === 0 ? 'var(--error)' : (desp > 2 ? 'var(--warn)' : 'var(--accent)');
+    filas += `<div>${g.padEnd(2)}: <span style="color:${color}">${signo(r.dx_mm)}, ${signo(r.dy_mm)} mm</span> · ${r.ancladas}/${r.de} celdas con cuadro</div>`;
+  }
+  const p = a.parches;
+  const parchesTxt = (p.score >= ANCLAJE.PARCHE_SCORE_MIN)
+    ? `${signo(p.dx_mm)}, ${signo(p.dy_mm)} mm (correlación ${p.score.toFixed(2)})`
+    : `no localizada (correlación ${p.score.toFixed(2)}); se usan las coordenadas calibradas`;
+  el.innerHTML = `
+    <div class="pv-title">Desplazamiento (x, y) aplicado a cada grupo respecto a la calibración</div>
+    <div class="pv-foot" style="font-family:ui-monospace,monospace;line-height:1.7;white-space:pre-wrap">${filas}<div>Tira de parches: ${parchesTxt}</div><div>Cuadros impresos detectados: ${a.cuadrosDetectados} · desplazamiento máximo: ${a.maxDesplazamiento_mm.toFixed(2)} mm</div></div>
+  `;
+}
+
 function reclassifyLive() {
   // Reclasifica la imagen actual con los parámetros vigentes del detector.
   // Trabaja directamente sobre STATE.lastGrayNorm. Si el usuario ajustó los
   // parámetros del patrón de tonos, debe llamarse antes a reapplyToneLUT()
   // para regenerar lastGrayNorm.
   if (!STATE.cvReady) return;
+
+  // Reanclar celdas y parches con la calibración/parámetros vigentes
+  reanclar();
 
   let classification = null;
   if (STATE.lastGrayNorm) {

@@ -138,6 +138,8 @@ function calibRowHTML(grupo, field, label, value) {
 
 function refreshCalibPreview() {
   if (!CALIB_BASE_RECTIFIED_DATAURL) return;
+  // Reanclar con la calibración vigente para dibujar dónde se lee cada celda
+  if (STATE.lastGrayRect) reanclar();
   const canvas = document.getElementById('calibPreviewCanvas');
   const ctx = canvas.getContext('2d');
   const img = new Image();
@@ -157,6 +159,20 @@ function refreshCalibPreview() {
       else if (c.grupo === 'P') ctx.strokeStyle = '#ff7dcc';
       else ctx.strokeStyle = '#ffb84d';
       ctx.strokeRect(cx - halfPx, cy - halfPx, halfPx * 2, halfPx * 2);
+    }
+    // Con anclaje activo: en blanco punteado, dónde se LEE realmente cada celda
+    // (el cuadro impreso al que se ancló). Si coincide con el color, la
+    // calibración está bien; si no, el anclaje está compensando un corrimiento.
+    if (STATE.coordsLectura) {
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.lineWidth = 1.5;
+      for (const c of STATE.coordsLectura) {
+        const cx = c.x * GEOM.PX_PER_MM;
+        const cy = c.y * GEOM.PX_PER_MM;
+        ctx.strokeRect(cx - halfPx, cy - halfPx, halfPx * 2, halfPx * 2);
+      }
+      ctx.setLineDash([]);
     }
   };
   img.src = CALIB_BASE_RECTIFIED_DATAURL;
