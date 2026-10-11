@@ -5,9 +5,10 @@
  * después del primer uso. Código propio, sin librerías externas.
  *
  * Estrategias:
- *  - Shell de la app (index.html, manifest, iconos): stale-while-revalidate.
- *    Se sirve al instante desde caché; si hay red se busca una versión nueva en
- *    segundo plano y, si el HTML cambió, se avisa a las pestañas abiertas.
+ *  - Shell de la app (index.html, css/, js/, manifest, iconos): stale-while-
+ *    revalidate. Se sirve al instante desde caché; si hay red se busca una
+ *    versión nueva en segundo plano y, si algún archivo de texto cambió, se
+ *    avisa a la pestaña para que ofrezca recargar.
  *  - Recursos grandes y estables (OpenCV.js en vendor/, fuentes de Google):
  *    cache-first. Se descargan una vez y se reutilizan siempre. OpenCV.js se
  *    guarda ya al instalar el worker, así el modo sin conexión funciona desde
@@ -19,16 +20,26 @@
  */
 'use strict';
 
-const VERSION = 'v1';
+const VERSION = 'v2';  // v2: index.html dividido en css/ y js/
 const SHELL_CACHE = 'omr-shell-' + VERSION;
 // Caché aparte para OpenCV.js y fuentes: no se borra al subir VERSION, así no
 // se vuelven a descargar ~8 MB con cada cambio de la app. Debe coincidir con la
-// constante VENDOR_CACHE de index.html.
+// constante VENDOR_CACHE de js/motor.js.
 const VENDOR_CACHE = 'omr-vendor-v2';  // v2: OpenCV.js servido desde vendor/ (antes CDN)
 
 const SHELL_ASSETS = [
   './',
   './index.html',
+  './css/estilos.css',
+  './js/estado.js',
+  './js/motor.js',
+  './js/app.js',
+  './js/camara.js',
+  './js/deteccion.js',
+  './js/calificacion.js',
+  './js/exportacion.js',
+  './js/calibracion.js',
+  './js/parametros.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -88,6 +99,11 @@ function isVendor(url) {
 }
 
 // Clave de caché sin query ni hash (p. ej. "?utm=..." o "#seccion").
+function isTextResponse(response) {
+  const ct = (response.headers.get('content-type') || '').toLowerCase();
+  return /text\/html|text\/css|javascript/.test(ct);
+}
+
 function cacheKey(urlString) {
   const u = new URL(urlString);
   u.search = '';
@@ -113,7 +129,9 @@ async function staleWhileRevalidate(event, request) {
   const cache = await caches.open(SHELL_CACHE);
   const cached = await cache.match(key, { ignoreVary: true });
   // Copia para comparar después (el cuerpo de `cached` lo consumirá la página).
-  const cachedForCompare = (cached && isNavigation) ? cached.clone() : null;
+  // Se comparan los recursos de texto (html, css, js): un cambio en cualquiera
+  // de ellos merece el aviso de nueva versión.
+  const cachedForCompare = (cached && isTextResponse(cached)) ? cached.clone() : null;
 
   const networkPromise = fetch(key, { cache: 'no-cache', credentials: 'same-origin' })
     .then(async (response) => {
