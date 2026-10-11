@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pruebas de regresión · Calificador OMR</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, Roboto, sans-serif; background: #0a0a0f; color: #e0e0e8; margin: 0; padding: 16px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p, .nota { font-size: 12px; color: #8a8a9a; margin: 0 0 12px; }
+  code { color: #5eb8ff; }
+  #estado { font-size: 13px; margin: 12px 0; padding: 10px 12px; background: #12121a; border: 1px solid #1e1e2e; border-radius: 10px; }
+  .foto { background: #12121a; border: 1px solid #1e1e2e; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+  .foto h2 { font-size: 13px; margin: 0 0 8px; word-break: break-all; color: #e0e0e8; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: ui-monospace, monospace; }
+  th, td { padding: 5px 6px; text-align: center; border-bottom: 1px solid #1e1e2e; }
+  th { color: #8a8a9a; font-weight: 600; }
+  td:first-child, th:first-child { text-align: left; }
+  .ok { color: #00e68a; } .mal { color: #ff5577; } .warn { color: #ffb84d; }
+  canvas { display: block; width: 100%; height: auto; margin-top: 10px; border-radius: 6px; background: #000; }
+  .resumen { font-size: 15px; font-weight: 700; }
+  details { margin-top: 8px; } summary { font-size: 12px; color: #8a8a9a; cursor: pointer; }
+  pre { font-size: 11px; color: #8a8a9a; white-space: pre-wrap; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<h1>Pruebas de regresión con fotos reales</h1>
+<p>Cada foto de <code>pruebas/fotos.json</code> pasa por el pipeline real (<code>js/deteccion.js</code>) con los parámetros y
+calibración por defecto, y se compara con el resultado codificado en el nombre del archivo. Se procesa con anclaje a los
+cuadros impresos y sin él.</p>
+<div id="estado">Cargando OpenCV.js…</div>
+<div id="lista"></div>
+
+<!-- `Module` debe existir antes de que se ejecute opencv.js -->
+<script>
+  var Module = { onRuntimeInitialized() { iniciar().catch(e => mostrarEstado('Error: ' + e.message, 'mal')); } };
+</script>
+<script src="../js/estado.js"></script>
+<script src="../js/deteccion.js"></script>
+<script>
+  // Resultados accesibles para automatización: window.RESULTADOS = { listo, fotos: [...] }
+  window.RESULTADOS = { listo: false, fotos: [] };
+  const CAMPOS = ['ID', 'F', 'P1', 'P2', 'P3', 'P4', 'P5'];
+
+  function mostrarEstado(txt, cls) {
+    const el = document.getElementById('estado');
+    el.textContent = txt; el.className = cls || '';
+  }
+
+  // Resultado esperado a partir del nombre del archivo.
+  function esperadoDesdeNombre(nombre) {
+    const m = nombre.match(/studentId_(\d+)_form_(\d)_P1_([^_]+)_P2_([^_]+)_P3_([^_]+)_P4_([^_]+)_P5_([^_.]+)/i);
+    if (!m) return null;
+    const norm = (v) => (v.toLowerCase() === 'null') ? null : (/^(amb|ambiguo|\?)$/i.test(v) ? 'AMBIGUO' : v.toUpperCase());
+    return { ID: m[1], F: m[2], P1: norm(m[3]), P2: norm(m[4]), P3: norm(m[5]), P4: norm(m[6]), P5: norm(m[7]) };
+  }
+
+  function cargarImagen(url) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => rej(new Error('No se pudo cargar ' + url));
+      img.src = url;
+    });
+  }
+
+  // Pasa la imagen por runPipeline con el radio de anclaje indicado.
+  function correr(img, anclajeMm, canvas) {
+    STATE.detectorParams.anclaje_mm = anclajeMm;
+    const t0 = performance.now();
+    const r = runPipeline(img);
+    const ms = Math.round(performance.now() - t0);
+    if (!r.ok) return { ok: false, msg: r.msg, ms };
+    const c = r.classification;
+    const out = { ok: true, ms, ID: c.ID, F: c.F, P1: c.P1, P2: c.P2, P3: c.P3, P4: c.P4, P5: c.P5, dudoso: c.dudoso,
+                  anclaje: STATE.anclaje ? JSON.parse(JSON.stringify(STATE.anclaje)) : null };
+    if (canvas) cv.imshow(canvas, r.rectified);
+    r.rectified.delete(); r.rectifiedClean.delete(); r.grayRect.delete(); r.grayNorm.delete();
+    return out;
+  }
+
+  function fmt(v) { return v === null || v === undefined ? '–' : (v === 'AMBIGUO' ? '?' : String(v)); }
+
+  async function iniciar() {
+    STATE.cvReady = true;
+    // Siempre valores por defecto (reproducible en cualquier dispositivo)
+    STATE.detectorParams = JSON.parse(JSON.stringify(DETECTOR_PARAMS_DEFAULT));
+    STATE.tonePatches = JSON.parse(JSON.stringify(TONE_PATCHES_DEFAULT));
+    CALIBRATION = JSON.parse(JSON.stringify(CALIBRATION_DEFAULT));
+    COORDS = buildCoords();
+    const radioDefault = DETECTOR_PARAMS_DEFAULT.anclaje_mm;
+
+    mostrarEstado('Cargando la lista de fotos…');
+    const lista = await (await fetch('fotos.json', { cache: 'no-store' })).json();
+    const cont = document.getElementById('lista');
+    let okTotal = 0;
+
+    for (const nombre of lista) {
+      const esperado = esperadoDesdeNombre(nombre);
+      const card = document.createElement('div');
+      card.className = 'foto';
+      card.innerHTML = `<h2>${nombre}</h2>`;
+      cont.appendChild(card);
+      if (!esperado) {
+        card.innerHTML += `<div class="mal">El nombre no sigue el patrón studentId_.._form_.._P1_.._P5_..</div>`;
+        window.RESULTADOS.fotos.push({ nombre, error: 'nombre' });
+        continue;
+      }
+      mostrarEstado(`Procesando ${nombre}…`);
+      let img;
+      try { img = await cargarImagen(nombre); }
+      catch (e) { card.innerHTML += `<div class="mal">${e.message}</div>`; window.RESULTADOS.fotos.push({ nombre, error: 'carga' }); continue; }
+
+      // Calentamiento (la primera pasada de OpenCV es más lenta y falsearía los tiempos)
+      if (!window.__calentado) { correr(img, radioDefault, null); window.__calentado = true; }
+      const canvas = document.createElement('canvas');
+      const con = correr(img, radioDefault, canvas);
+      const sin = correr(img, 0, null);
+
+      let filas = '';
+      let aciertos = 0;
+      for (const k of CAMPOS) {
+        const okCon = con.ok && con[k] === esperado[k];
+        const okSin = sin.ok && sin[k] === esperado[k];
+        if (okCon) aciertos++;
+        filas += `<tr><td>${k}</td><td>${fmt(esperado[k])}</td>
+          <td class="${okCon ? 'ok' : 'mal'}">${con.ok ? fmt(con[k]) : '✗'} ${okCon ? '✓' : '✗'}</td>
+          <td class="${okSin ? 'ok' : 'mal'}">${sin.ok ? fmt(sin[k]) : '✗'} ${okSin ? '✓' : '✗'}</td></tr>`;
+      }
+      const todoOk = con.ok && aciertos === CAMPOS.length;
+      if (todoOk) okTotal++;
+      const a = con.anclaje;
+      let detalle = '';
+      if (!con.ok) detalle = `Con anclaje: ${con.msg}\n`;
+      if (!sin.ok) detalle += `Sin anclaje: ${sin.msg}\n`;
+      if (a) {
+        detalle += `Anclaje: ${a.cuadrosDetectados} cuadros detectados · desplazamiento máximo ${a.maxDesplazamiento_mm.toFixed(2)} mm\n`;
+        for (const g in a.porGrupo) { const r = a.porGrupo[g]; detalle += `  ${g}: dx=${r.dx_mm.toFixed(2)} dy=${r.dy_mm.toFixed(2)} mm (${r.ancladas}/${r.de})\n`; }
+        detalle += `  parches: dx=${a.parches.dx_mm.toFixed(2)} dy=${a.parches.dy_mm.toFixed(2)} (corr. ${a.parches.score.toFixed(2)})`;
+      }
+      card.innerHTML += `
+        <div class="resumen ${todoOk ? 'ok' : 'mal'}">${todoOk ? '✓ Correcta' : `✗ ${aciertos}/${CAMPOS.length} campos correctos`} <span class="nota">· con anclaje ${con.ms} ms · sin anclaje ${sin.ms} ms</span></div>
+        <table><thead><tr><th>Campo</th><th>Esperado</th><th>Con anclaje</th><th>Sin anclaje</th></tr></thead><tbody>${filas}</tbody></table>
+        <details><summary>Detalle del anclaje</summary><pre>${detalle || 'sin datos'}</pre></details>`;
+      card.appendChild(canvas);
+      window.RESULTADOS.fotos.push({ nombre, esperado, con, sin, todoOk, aciertos });
+      await new Promise(r => setTimeout(r, 0));
+    }
+    const total = lista.length;
+    mostrarEstado(`${okTotal}/${total} fotos correctas con anclaje (parámetros por defecto)`, okTotal === total ? 'ok' : 'mal');
+    window.RESULTADOS.listo = true;
+    window.RESULTADOS.okTotal = okTotal;
+    window.RESULTADOS.total = total;
+  }
+</script>
+<script async src="../vendor/opencv.js" onerror="mostrarEstado('No se pudo cargar ../vendor/opencv.js', 'mal')"></script>
+</body>
+</html>

@@ -38,6 +38,12 @@ const STATE = {
   // Patrón de calibración de tonos (4 parches). Inicializado con TONE_PATCHES_DEFAULT
   // o con la versión persistida en localStorage.
   tonePatches: null,
+  // Coordenadas con las que se leyeron las celdas en el último escaneo: las de
+  // COORDS ancladas a los cuadros impresos (ver anclarCasillas en js/deteccion.js).
+  // null = se usan las coordenadas calibradas (COORDS) tal cual.
+  coordsLectura: null,
+  // Resumen del último anclaje: desplazamiento por grupo, parches, etc.
+  anclaje: null,
 };
 
 // ============================================
@@ -64,6 +70,14 @@ const DETECTOR_PARAMS_DEFAULT = {
   // Margen interno del ROI: porcentaje del lado que se descarta del borde
   // para no incluir el contorno impreso del casillero.
   roi_margin_pct: 0.20,
+
+  // Anclaje a los cuadros impresos: antes de medir, cada celda se centra en el
+  // cuadro impreso más cercano y la tira de parches de tono se localiza en su
+  // posición real. Compensa hojas dobladas o fotos con distorsión, donde la
+  // homografía de los 4 marcadores deja las zonas de lectura corridas varios
+  // mm. Valor = radio de búsqueda en X (mm) alrededor de la posición calibrada;
+  // en Y se busca la mitad. 0 = desactivado.
+  anclaje_mm: 6,
 };
 
 const STORAGE_KEY_PARAMS = 'omr_detector_params_v4';  // v4 = LUT con parches ajustables
@@ -192,6 +206,12 @@ function buildCoords() {
 
 // COORDS se recalcula cada vez que cambia la calibracion
 let COORDS = buildCoords();
+
+// Coordenadas con las que se LEEN las celdas: las ancladas al último escaneo
+// si existen (STATE.coordsLectura, ver js/deteccion.js), si no, COORDS.
+function getCoordsLectura() {
+  return STATE.coordsLectura || COORDS;
+}
 
 // Helper: tamaño del casillero en pixels (medio lado).
 // Usa el valor de CALIBRATION.roi_size si existe, sino el default geometrico.
