@@ -73,6 +73,15 @@ const PARAM_SLIDERS = [
 
   // (Aquí entre ② y ③: se aplica la LUT a la imagen → grayNorm. Sin parámetros.)
 
+  // ETAPA ②b — RECTIFICACIÓN (cabecera v2: marcadores centrales)
+  {
+    grupo: '② Rectificación por mitades (cabecera v2)',
+    items: [
+      { path: 'rectificar_por_mitades', label: 'Usar marcadores centrales 4 y 5', min: 0, max: 1, step: 1, decimals: 0, reprocesar: true,
+        desc: 'Con la cabecera v2, la hoja se rectifica en dos mitades (izquierda con los marcadores 0-4-5-2, derecha con 4-1-3-5) unidas en la columna central: un doblez por el centro deja de deformar la lectura. Sin marcadores centrales (hojas v1) se usa siempre la homografía única. 1 = activo, 0 = desactivado. Al cambiarlo se vuelve a procesar la última foto.' },
+    ],
+  },
+
   // ETAPA ③ — ANCLAJE A LOS CUADROS IMPRESOS (compensa hojas dobladas)
   {
     grupo: '③ Anclaje a los cuadros impresos',
@@ -191,6 +200,14 @@ function renderParamsUI() {
       // Si el slider modifica parámetros LUT, hay que reaplicar la LUT antes
       // de reclasificar (porque cambia lastGrayNorm).
       const item = findParamItem(path);
+      // Parámetros que actúan antes de la rectificación: hay que repetir el
+      // pipeline completo sobre la última foto (reclasificar no basta).
+      if (item && item.reprocesar) {
+        if (!reprocesarUltimaFoto(() => { reclassifyLive(); renderAllParamPreviews(); })) {
+          renderAllParamPreviews();
+        }
+        return;
+      }
       if (item && item.store === 'lut') {
         reapplyToneLUT();
       }
@@ -230,6 +247,8 @@ function renderParamsUI() {
 // ==========================================================================
 
 const PARAM_PREVIEW_BUILDERS = {
+  // Rectificación por mitades
+  'rectificar_por_mitades': buildPreviewRectificacion,
   // Anclaje a los cuadros impresos
   'anclaje_mm':       buildPreviewAnclaje,
   // Decisión / ROI
@@ -765,6 +784,26 @@ function buildPreviewLutCurve(el, path) {
 }
 
 
+
+function buildPreviewRectificacion(el, path) {
+  const r = DEBUG.rectificacion;
+  if (!r) {
+    el.innerHTML = `<div class="pv-foot">Sin imagen disponible</div>`;
+    return;
+  }
+  const ids = r.marcadores.join(', ');
+  let txt;
+  if (r.modo === 'dos_mitades') {
+    const d = r.desvioCentral_mm;
+    txt = `<span style="color:var(--accent)">Dos mitades</span> · marcadores detectados: ${ids} · costura en x = ${(r.costura_px / GEOM.PX_PER_MM).toFixed(1)} mm` +
+          `<br>Desvío de los centrales respecto a la homografía única: 4 → ${d[4].toFixed(2)} mm · 5 → ${d[5].toFixed(2)} mm` +
+          ` <span style="color:var(--text-muted)">(cuanto mayor, más doblada estaba la hoja por el centro)</span>`;
+  } else {
+    txt = `<span style="color:var(--info)">Homografía única</span> · marcadores detectados: ${ids}` +
+          (r.motivo ? `<br>${r.motivo}` : `<br>Sin marcadores centrales (hoja v1 o marcadores tapados)`);
+  }
+  el.innerHTML = `<div class="pv-title">Cómo se rectificó la última foto</div><div class="pv-foot" style="line-height:1.6">${txt}</div>`;
+}
 
 function buildPreviewAnclaje(el, path) {
   if (!STATE.lastGrayRect) {

@@ -78,10 +78,19 @@ Además: la interfaz y los comentarios del código están en **español**; mante
   205 × 22 mm (15 px/mm). Las celdas se leen en coordenadas calibradas
   (`CALIBRATION` → `COORDS`) midiendo la fracción de píxeles oscuros sobre la
   imagen normalizada con la LUT de los 4 parches de tono.
+- **Cabecera v2 (marcadores centrales 4 y 5):** si se detectan, `rectificar`
+  usa dos homografías (izquierda 0-4-5-2, derecha 4-1-3-5) unidas en la columna
+  central (`GEOM.MARCADORES_MM`), así un doblez por el centro se absorbe como
+  cambio de plano. Antes se comprueba que los centrales caigan cerca de su
+  posición esperada (`GEOM.TOL_MARCADOR_CENTRAL_MM`); si no, o si faltan (hojas
+  v1), homografía única. Parámetro `rectificar_por_mitades` (Detector → "②"),
+  que al cambiar vuelve a procesar la última foto (`reprocesarUltimaFoto`).
+  El resultado queda en `DEBUG.rectificacion`.
 - Con la hoja doblada o la foto distorsionada, una homografía de 4 puntos deja
   el centro corrido varios mm (medido: 3,75 mm con casillas de 4,2 mm y paso
   de 6,7 mm). Por eso, antes de medir, `aplicarAnclaje` (en `js/deteccion.js`)
-  detecta los cuadros impresos (umbral adaptativo + contornos), busca para cada
+  detecta los cuadros impresos (umbral adaptativo + contornos; se descartan las
+  formas con el interior oscuro, como los marcadores centrales), busca para cada
   fila el desplazamiento que hace coincidir más celdas con un cuadro, centra
   cada celda en su cuadro y localiza la tira de parches con una plantilla de 4
   bandas. El resultado queda en `STATE.coordsLectura` / `STATE.anclaje`;

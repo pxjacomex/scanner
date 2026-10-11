@@ -28,7 +28,7 @@
 <h1>Pruebas de regresión con fotos reales</h1>
 <p>Cada foto de <code>pruebas/fotos.json</code> pasa por el pipeline real (<code>js/deteccion.js</code>) con los parámetros y
 calibración por defecto, y se compara con el resultado codificado en el nombre del archivo. Se procesa con anclaje a los
-cuadros impresos y sin él.</p>
+cuadros impresos y sin él; con cabecera v2 se usa además la rectificación por mitades (ver "Detalle").</p>
 <div id="estado">Cargando OpenCV.js…</div>
 <div id="lista"></div>
 
@@ -74,7 +74,8 @@ cuadros impresos y sin él.</p>
     if (!r.ok) return { ok: false, msg: r.msg, ms };
     const c = r.classification;
     const out = { ok: true, ms, ID: c.ID, F: c.F, P1: c.P1, P2: c.P2, P3: c.P3, P4: c.P4, P5: c.P5, dudoso: c.dudoso,
-                  anclaje: STATE.anclaje ? JSON.parse(JSON.stringify(STATE.anclaje)) : null };
+                  anclaje: STATE.anclaje ? JSON.parse(JSON.stringify(STATE.anclaje)) : null,
+                  rectificacion: r.rectificacion ? JSON.parse(JSON.stringify(r.rectificacion)) : null };
     if (canvas) cv.imshow(canvas, r.rectified);
     r.rectified.delete(); r.rectifiedClean.delete(); r.grayRect.delete(); r.grayNorm.delete();
     return out;
@@ -134,6 +135,12 @@ cuadros impresos y sin él.</p>
       let detalle = '';
       if (!con.ok) detalle = `Con anclaje: ${con.msg}\n`;
       if (!sin.ok) detalle += `Sin anclaje: ${sin.msg}\n`;
+      const rc = con.rectificacion;
+      if (rc) {
+        detalle += `Rectificación: ${rc.modo === 'dos_mitades' ? 'dos mitades' : 'homografía única'} · marcadores ${rc.marcadores.join(',')}` +
+                   (rc.desvioCentral_mm ? ` · desvío centrales 4→${rc.desvioCentral_mm[4].toFixed(2)} mm, 5→${rc.desvioCentral_mm[5].toFixed(2)} mm` : '') +
+                   (rc.motivo ? ` · ${rc.motivo}` : '') + '\n';
+      }
       if (a) {
         detalle += `Anclaje: ${a.cuadrosDetectados} cuadros detectados · desplazamiento máximo ${a.maxDesplazamiento_mm.toFixed(2)} mm\n`;
         for (const g in a.porGrupo) { const r = a.porGrupo[g]; detalle += `  ${g}: dx=${r.dx_mm.toFixed(2)} dy=${r.dy_mm.toFixed(2)} mm (${r.ancladas}/${r.de})\n`; }

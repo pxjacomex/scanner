@@ -44,8 +44,9 @@ function hideProcessing() {
 // ============================================
 // PIPELINE PRINCIPAL
 // ============================================
-function processImage(imgElement) {
+function processImage(imgElement, onDone) {
   showProcessing('Detectando marcadores...');
+  const terminar = () => { if (typeof onDone === 'function') { try { onDone(); } catch (_) {} } };
 
   // Pequeño delay para que se vea el spinner
   setTimeout(() => {
@@ -55,6 +56,7 @@ function processImage(imgElement) {
       if (!result.ok) {
         hideProcessing();
         toast(result.msg, 'error');
+        terminar();
         return;
       }
 
@@ -112,10 +114,22 @@ function processImage(imgElement) {
 
       renderScanResult();
       hideProcessing();
+      terminar();
     } catch (err) {
       hideProcessing();
       console.error(err);
       toast('Error procesando: ' + err.message, 'error');
+      terminar();
     }
   }, 50);
+}
+
+// Vuelve a pasar la última foto por el pipeline completo. Hace falta cuando
+// cambia algo que actúa ANTES de la imagen rectificada (p. ej. el modo de
+// rectificación), que no puede reaplicarse sobre las matrices guardadas.
+function reprocesarUltimaFoto(onDone) {
+  const img = document.getElementById('capturedImg');
+  if (!STATE.cvReady || !img || !img.src) return false;
+  processImage(img, onDone);
+  return true;
 }

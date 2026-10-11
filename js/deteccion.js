@@ -4,9 +4,10 @@
 // normalización por parches de tono (LUT) → features por casillero →
 // clasificación → anotación. Funciones puras sobre matrices de OpenCV; leen
 // STATE/DEBUG/COORDS/GEOM (js/estado.js) y no tocan el DOM.
-// Incluye el ANCLAJE a los cuadros impresos (al final del archivo): corrige
-// el corrimiento de las celdas cuando la hoja está doblada o la foto tiene
-// distorsión que la homografía de 4 puntos no modela.
+// Incluye la RECTIFICACIÓN POR MITADES con los marcadores centrales 4 y 5 de
+// la cabecera v2 (función rectificar) y el ANCLAJE a los cuadros impresos (al
+// final del archivo), que corrige el corrimiento residual de las celdas cuando
+// la hoja está doblada o la foto tiene distorsión.
 // ============================================================================
 
 // ============================================
@@ -103,26 +104,12 @@ function runPipeline(imgElement) {
     ];
   };
 
-  const M0 = centro(0), M1 = centro(1), M2 = centro(2), M3 = centro(3);
+  // 6. Rectificar: homografía única con las 4 esquinas o, si hay marcadores
+  //    centrales (cabecera v2), dos homografías unidas en la columna central.
+  const rectInfo = rectificar(src, idToCorners, centro);
+  const rectified = rectInfo.rectified;
+  DEBUG.rectificacion = rectInfo.info;
 
-  // 6. Construir homografía
-  // Puntos en imagen original
-  const srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
-    M0[0], M0[1], M1[0], M1[1], M3[0], M3[1], M2[0], M2[1]
-  ]);
-  // Puntos en imagen rectificada
-  const dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
-    GEOM.OFFSET_X_MM * GEOM.PX_PER_MM, GEOM.OFFSET_Y_MM * GEOM.PX_PER_MM,
-    (GEOM.OFFSET_X_MM + GEOM.M0_M1_MM) * GEOM.PX_PER_MM, GEOM.OFFSET_Y_MM * GEOM.PX_PER_MM,
-    (GEOM.OFFSET_X_MM + GEOM.M0_M1_MM) * GEOM.PX_PER_MM, (GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM) * GEOM.PX_PER_MM,
-    GEOM.OFFSET_X_MM * GEOM.PX_PER_MM, (GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM) * GEOM.PX_PER_MM,
-  ]);
-
-  const H = cv.getPerspectiveTransform(srcPts, dstPts);
-  const rectified = new cv.Mat();
-  cv.warpPerspective(src, rectified, H, new cv.Size(GEOM.W_PX, GEOM.H_PX));
-
-  srcPts.delete(); dstPts.delete(); H.delete();
   src.delete(); gray.delete(); corners.delete(); ids.delete();
   if (detector) detector.delete();
   params.delete();
@@ -160,7 +147,86 @@ function runPipeline(imgElement) {
 
   // grayRect: gris ANTES de la LUT (se conserva para reaplicar LUT al ajustar parches)
   // grayNorm: gris YA normalizada (la usa el detector)
-  return { ok: true, rectified, rectifiedClean, grayRect, grayNorm, classification };
+  return { ok: true, rectified, rectifiedClean, grayRect, grayNorm, classification, rectificacion: rectInfo.info };
+}
+
+
+// ============================================
+// RECTIFICACIÓN (homografía única o por mitades)
+// ============================================
+// Con las 4 esquinas se obtiene UNA homografía: perfecta si la hoja es plana.
+// La cabecera v2 añade los marcadores 4 (arriba) y 5 (abajo) en la columna
+// central; si están, la cabecera se rectifica en dos mitades, cada una con su
+// propia homografía (izquierda: 0-4-5-2; derecha: 4-1-3-5) y se unen en la
+// columna de los marcadores centrales. Así un doblez por el centro, que una
+// sola homografía no puede modelar, se absorbe como un cambio de plano.
+// Antes de usarlos se comprueba que proyectados con la homografía única caigan
+// cerca de su posición esperada (descarta ids falsos). Devuelve
+// { rectified, info } con info = { modo, marcadores, desvioCentral_mm, costura_px }.
+function rectificar(src, idToCorners, centro) {
+  const PX = GEOM.PX_PER_MM;
+  const P = STATE.detectorParams || DETECTOR_PARAMS_DEFAULT;
+  const usarMitades = (typeof P.rectificar_por_mitades !== 'number') || P.rectificar_por_mitades > 0;
+  const dst = (id) => [GEOM.MARCADORES_MM[id].x * PX, GEOM.MARCADORES_MM[id].y * PX];
+  const homografia = (srcQuad, dstQuad) => {
+    const s = cv.matFromArray(4, 1, cv.CV_32FC2, [].concat(...srcQuad));
+    const d = cv.matFromArray(4, 1, cv.CV_32FC2, [].concat(...dstQuad));
+    const H = cv.getPerspectiveTransform(s, d);
+    s.delete(); d.delete();
+    return H;
+  };
+  const warp = (H) => {
+    const out = new cv.Mat();
+    cv.warpPerspective(src, out, H, new cv.Size(GEOM.W_PX, GEOM.H_PX));
+    return out;
+  };
+  const proyectar = (H, p) => {
+    const h = H.data64F;
+    const z = h[6] * p[0] + h[7] * p[1] + h[8];
+    return [(h[0] * p[0] + h[1] * p[1] + h[2]) / z, (h[3] * p[0] + h[4] * p[1] + h[5]) / z];
+  };
+
+  const M0 = centro(0), M1 = centro(1), M2 = centro(2), M3 = centro(3);
+  const info = {
+    modo: 'simple',
+    marcadores: Object.keys(idToCorners).map(Number).sort((a, b) => a - b),
+    desvioCentral_mm: null,
+    costura_px: null,
+  };
+  // Homografía única (respaldo y referencia para validar los centrales)
+  const H = homografia([M0, M1, M3, M2], [dst(0), dst(1), dst(3), dst(2)]);
+  let rectified = null;
+
+  if (usarMitades && (4 in idToCorners) && (5 in idToCorners)) {
+    const M4 = centro(4), M5 = centro(5);
+    const p4 = proyectar(H, M4), p5 = proyectar(H, M5);
+    const d4 = Math.hypot(p4[0] - dst(4)[0], p4[1] - dst(4)[1]) / PX;
+    const d5 = Math.hypot(p5[0] - dst(5)[0], p5[1] - dst(5)[1]) / PX;
+    info.desvioCentral_mm = { 4: d4, 5: d5 };
+    if (d4 <= GEOM.TOL_MARCADOR_CENTRAL_MM && d5 <= GEOM.TOL_MARCADOR_CENTRAL_MM) {
+      const HL = homografia([M0, M4, M5, M2], [dst(0), dst(4), dst(5), dst(2)]);
+      const HR = homografia([M4, M1, M3, M5], [dst(4), dst(1), dst(3), dst(5)]);
+      const izq = warp(HL), der = warp(HR);
+      HL.delete(); HR.delete();
+      const costura = Math.round(GEOM.MARCADORES_MM[4].x * PX);
+      // Mitad izquierda tal cual; la derecha se copia a partir de la costura
+      const roiDer = der.roi(new cv.Rect(costura, 0, GEOM.W_PX - costura, GEOM.H_PX));
+      const roiDst = izq.roi(new cv.Rect(costura, 0, GEOM.W_PX - costura, GEOM.H_PX));
+      roiDer.copyTo(roiDst);
+      roiDer.delete(); roiDst.delete(); der.delete();
+      rectified = izq;
+      info.modo = 'dos_mitades';
+      info.costura_px = costura;
+    } else {
+      info.motivo = 'marcadores centrales fuera de su posición esperada';
+    }
+  } else if (!usarMitades && (4 in idToCorners) && (5 in idToCorners)) {
+    info.motivo = 'rectificación por mitades desactivada';
+  }
+
+  if (!rectified) rectified = warp(H);
+  H.delete();
+  return { rectified, info };
 }
 
 
@@ -571,12 +637,27 @@ const ANCLAJE = {
   UMBRAL_BLOQUE: 41,       // adaptiveThreshold: tamaño del vecindario (px, impar)
   UMBRAL_C: 12,            // adaptiveThreshold: constante restada
   PARCHE_SCORE_MIN: 0.6,   // correlación mínima para aceptar la posición de la tira
+  INTERIOR_MIN_FRAC: 0.7,  // interior del cuadro >= 70 % del nivel del papel (si no, es una forma rellena)
 };
+
+// Nivel de gris del papel: mediana de una muestra de píxeles (barato).
+function nivelPapel(grayRect) {
+  const d = grayRect.data, hist = new Uint32Array(256);
+  let n = 0;
+  for (let i = 0; i < d.length; i += 97) { hist[d[i]]++; n++; }
+  let acc = 0;
+  for (let g = 0; g < 256; g++) { acc += hist[g]; if (acc >= n / 2) return g; }
+  return 255;
+}
 
 // Devuelve los cuadros impresos detectados: [{x, y, w, h}] en mm (centros).
 function detectarCuadrosImpresos(grayRect) {
   const PX = GEOM.PX_PER_MM;
   const lado = getRoiHalfPx() * 2;   // lado esperado del cuadro, en px
+  // Un cuadro impreso está HUECO (papel con una letra tenue). Las formas con el
+  // interior oscuro (marcadores ArUco centrales, manchas, casillas muy pintadas)
+  // se descartan: no sirven de ancla y podrían desplazar una fila.
+  const umbralInterior = nivelPapel(grayRect) * ANCLAJE.INTERIOR_MIN_FRAC;
   const bin = new cv.Mat();
   cv.adaptiveThreshold(grayRect, bin, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV,
     ANCLAJE.UMBRAL_BLOQUE, ANCLAJE.UMBRAL_C);
@@ -591,7 +672,14 @@ function detectarCuadrosImpresos(grayRect) {
     const ok = b.width > lado * 0.7 && b.width < lado * 1.45 &&
                b.height > lado * 0.7 && b.height < lado * 1.45 &&
                Math.abs(b.width - b.height) < lado * 0.3;
-    if (!ok) continue;   // letras, marcadores ArUco, parches, texto: fuera
+    if (!ok) continue;   // letras, marcadores ArUco de esquina, parches, texto: fuera
+    // Interior (40 % central): debe ser claro
+    const ix = b.x + Math.round(b.width * 0.3), iy = b.y + Math.round(b.height * 0.3);
+    const iw = Math.max(1, Math.round(b.width * 0.4)), ih = Math.max(1, Math.round(b.height * 0.4));
+    const interior = grayRect.roi(new cv.Rect(ix, iy, iw, ih));
+    const mediaInterior = cv.mean(interior)[0];
+    interior.delete();
+    if (mediaInterior < umbralInterior) continue;
     const q = { x: (b.x + b.width / 2) / PX, y: (b.y + b.height / 2) / PX, w: b.width / PX, h: b.height / PX };
     if (!cuadros.some(u => Math.hypot(u.x - q.x, u.y - q.y) < ANCLAJE.DEDUP_MM)) cuadros.push(q);
   }

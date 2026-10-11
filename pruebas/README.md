@@ -27,3 +27,9 @@ los guardados en el dispositivo, así el resultado es reproducible.
 
 Conviene incluir fotos difíciles (hoja doblada, poca luz, sombras, bolígrafo,
 lápiz suave): son las que detectan regresiones al cambiar el detector.
+
+Después de `P5_<r>` el nombre puede llevar un sufijo libre (por ejemplo
+`_v2_doblada_sintetica`) para describir la foto. Las "sintéticas" se generan a
+partir del PDF de la plantilla con marcas y deformaciones simuladas; sirven
+para cubrir casos que aún no tienen foto real (como la cabecera v2 doblada por
+el centro), pero no sustituyen a una foto real.

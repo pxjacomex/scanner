@@ -78,6 +78,14 @@ const DETECTOR_PARAMS_DEFAULT = {
   // mm. Valor = radio de búsqueda en X (mm) alrededor de la posición calibrada;
   // en Y se busca la mitad. 0 = desactivado.
   anclaje_mm: 6,
+
+  // Rectificación por mitades (cabecera v2): si se detectan los marcadores
+  // centrales 4 y 5, la cabecera se rectifica con dos homografías (mitad
+  // izquierda: 0-4-5-2; mitad derecha: 4-1-3-5) unidas en la columna central.
+  // Un doblez en el centro de la hoja, que una homografía única no puede
+  // modelar, queda absorbido por el cambio de plano. Sin marcadores centrales
+  // (hojas v1) se usa siempre la homografía única. 1 = activo, 0 = desactivado.
+  rectificar_por_mitades: 1,
 };
 
 const STORAGE_KEY_PARAMS = 'omr_detector_params_v4';  // v4 = LUT con parches ajustables
@@ -232,6 +240,25 @@ const GEOM = {
 };
 GEOM.W_PX = Math.round(GEOM.RECT_W_MM * GEOM.PX_PER_MM);
 GEOM.H_PX = Math.round(GEOM.RECT_H_MM * GEOM.PX_PER_MM);
+
+// Posición de cada marcador ArUco en el marco rectificado (mm de app).
+// - 0..3 (esquinas) definen el marco: M0 en (OFFSET_X, OFFSET_Y), etc.
+// - 4 y 5 (columna central, solo en la cabecera v2) se derivan de la plantilla:
+//   centros en (122.99, 14.03) y (122.99, 20.83) mm de página con M0 en
+//   (6.6, 6.09): x = 5 + (122.99 - 6.6) · 194.9/196.8 = 120.27;
+//   y = 5 + (y - 6.09) · 11.85/13.8 = 11.82 y 17.66.
+GEOM.MARCADORES_MM = {
+  0: { x: GEOM.OFFSET_X_MM,                 y: GEOM.OFFSET_Y_MM },
+  1: { x: GEOM.OFFSET_X_MM + GEOM.M0_M1_MM, y: GEOM.OFFSET_Y_MM },
+  2: { x: GEOM.OFFSET_X_MM,                 y: GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM },
+  3: { x: GEOM.OFFSET_X_MM + GEOM.M0_M1_MM, y: GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM },
+  4: { x: 120.27, y: 11.82 },
+  5: { x: 120.27, y: 17.66 },
+};
+// Si, proyectados con la homografía de las esquinas, los marcadores centrales
+// caen a más de esta distancia de su posición esperada, se consideran falsos y
+// se usa la homografía única.
+GEOM.TOL_MARCADOR_CENTRAL_MM = 15;
 
 // ============================================
 // PATRÓN DE CALIBRACIÓN DE TONOS (4 parches)
