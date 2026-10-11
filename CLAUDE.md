@@ -50,7 +50,9 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `vendor/opencv.js` | Build oficial de OpenCV.js (4.x) servido desde este mismo sitio. `docs.opencv.org` retiró la URL `4.10.0/opencv.js` que usaba la app, por eso se aloja aquí. |
 | `.nojekyll` | Evita que GitHub Pages procese el sitio con Jekyll (sirve los archivos tal cual). |
 | `manifest.webmanifest`, `icons/` | Metadatos e iconos para instalar como app en Android. |
-| `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea. |
+| `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea (cabecera v2). Se genera con `generar_cabecera_v2.py` (cabecera) + `integrar_cabecera_v2.py` (la monta sobre el cuerpo de preguntas de `plantilla_A4_v1.pdf`). |
+| `templates/plantilla_A4_v1.pdf` | Plantilla original (histórico). Misma geometría de marcadores, casilleros y parches que la v2: la calibración por defecto sirve para ambas. |
+| `templates/cabecera_v2.*` | Cabecera v2 sola (PNG 300 dpi, PDF vectorial) y comparación con la v1. |
 | `pruebas/` | Fotos reales con el resultado esperado en el nombre, `fotos.json` y `regresion.html` (página que las pasa por el pipeline y compara; ver `pruebas/README.md`). No se cachea sin conexión. |
 
 ## Cómo están organizados los scripts
