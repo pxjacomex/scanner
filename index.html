@@ -149,6 +149,24 @@
       </div>
     </div>
 
+    <!-- Datos para la exportación: grupo de estudiantes y nombre de la evaluación -->
+    <div class="export-config">
+      <div class="form-group">
+        <label for="grupoSelect">Grupo de estudiantes</label>
+        <div class="grupo-row">
+          <select class="select" id="grupoSelect"></select>
+          <button class="btn btn-ghost btn-inline" type="button" onclick="document.getElementById('gruposInput').click()">📂 Cargar</button>
+          <input type="file" id="gruposInput" accept=".csv,text/csv,text/comma-separated-values,application/csv" multiple style="display:none">
+        </div>
+        <div class="field-note" id="gruposInfo"></div>
+      </div>
+      <div class="form-group">
+        <label for="evalNombre">Nombre de la evaluación</label>
+        <input class="input" type="text" id="evalNombre" maxlength="60" autocomplete="off" placeholder="p. ej. Quiz 3">
+        <div class="field-note">Forma parte del nombre del archivo CSV y sustituye el título de la columna "Nota".</div>
+      </div>
+    </div>
+
     <div class="btn-row" style="margin-top:14px">
       <button class="btn btn-secondary" id="btnExport" onclick="exportCSV()">⬇️ CSV</button>
       <button class="btn btn-secondary" id="btnShare" onclick="shareResults()">📤 Compartir</button>
@@ -313,6 +331,7 @@
 <script src="js/camara.js"></script>
 <script src="js/deteccion.js"></script>
 <script src="js/calificacion.js"></script>
+<script src="js/grupos.js"></script>
 <script src="js/exportacion.js"></script>
 <script src="js/calibracion.js"></script>
 <script src="js/parametros.js"></script>

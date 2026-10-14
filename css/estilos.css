@@ -300,6 +300,35 @@ body {
   border-color: var(--accent);
 }
 
+/* Exportación: grupo + nombre de la evaluación (pestaña Resultados) */
+.export-config {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.grupo-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.grupo-row .select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.btn-inline {
+  width: auto;
+  flex: 0 0 auto;
+  margin-bottom: 0;
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.field-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
 .answer-row {
   display: grid;
   grid-template-columns: 60px repeat(4, 1fr);
