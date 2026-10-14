@@ -119,6 +119,34 @@
     </div>
   </div>
 
+  <!-- Exportación y limpieza; la tabla de escaneos va al final de la pestaña -->
+  <div class="card">
+    <h2>Exportar resultados</h2>
+    <!-- Datos para la exportación: grupo de estudiantes y nombre de la evaluación -->
+    <div class="export-config">
+      <div class="form-group">
+        <label for="grupoSelect">Grupo de estudiantes</label>
+        <div class="grupo-row">
+          <select class="select" id="grupoSelect"></select>
+          <button class="btn btn-ghost btn-inline" type="button" onclick="document.getElementById('gruposInput').click()">📂 Cargar</button>
+          <input type="file" id="gruposInput" accept=".csv,text/csv,text/comma-separated-values,application/csv" multiple style="display:none">
+        </div>
+        <div class="field-note" id="gruposInfo"></div>
+      </div>
+      <div class="form-group">
+        <label for="evalNombre">Nombre de la evaluación</label>
+        <input class="input" type="text" id="evalNombre" maxlength="60" autocomplete="off" placeholder="p. ej. Quiz 3">
+        <div class="field-note">Forma parte del nombre del archivo CSV y sustituye el título de la columna "Nota".</div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-secondary" id="btnExport" onclick="exportCSV()">⬇️ CSV</button>
+      <button class="btn btn-secondary" id="btnShare" onclick="shareResults()">📤 Compartir</button>
+    </div>
+    <button class="btn btn-danger" id="btnClearAll" onclick="confirmClearAll()" style="margin-top:6px">🗑️ Borrar todo</button>
+  </div>
+
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <h2 style="margin:0">Tabla de escaneos</h2>
@@ -149,30 +177,6 @@
         <div style="font-size:11px;margin-top:4px;color:var(--text-muted)">Toma fotos en la pestaña Escanear</div>
       </div>
     </div>
-
-    <!-- Datos para la exportación: grupo de estudiantes y nombre de la evaluación -->
-    <div class="export-config">
-      <div class="form-group">
-        <label for="grupoSelect">Grupo de estudiantes</label>
-        <div class="grupo-row">
-          <select class="select" id="grupoSelect"></select>
-          <button class="btn btn-ghost btn-inline" type="button" onclick="document.getElementById('gruposInput').click()">📂 Cargar</button>
-          <input type="file" id="gruposInput" accept=".csv,text/csv,text/comma-separated-values,application/csv" multiple style="display:none">
-        </div>
-        <div class="field-note" id="gruposInfo"></div>
-      </div>
-      <div class="form-group">
-        <label for="evalNombre">Nombre de la evaluación</label>
-        <input class="input" type="text" id="evalNombre" maxlength="60" autocomplete="off" placeholder="p. ej. Quiz 3">
-        <div class="field-note">Forma parte del nombre del archivo CSV y sustituye el título de la columna "Nota".</div>
-      </div>
-    </div>
-
-    <div class="btn-row" style="margin-top:14px">
-      <button class="btn btn-secondary" id="btnExport" onclick="exportCSV()">⬇️ CSV</button>
-      <button class="btn btn-secondary" id="btnShare" onclick="shareResults()">📤 Compartir</button>
-    </div>
-    <button class="btn btn-danger" id="btnClearAll" onclick="confirmClearAll()" style="margin-top:6px">🗑️ Borrar todo</button>
   </div>
 </div>
 

@@ -318,11 +318,11 @@ body {
   border-color: var(--accent);
 }
 
-/* Exportación: grupo + nombre de la evaluación (pestaña Resultados) */
+/* Exportación: grupo + nombre de la evaluación (pestaña Resultados).
+   Va al principio de su tarjeta, justo bajo el título; la tabla de escaneos
+   tiene su propia tarjeta al final de la pestaña. */
 .export-config {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
+  margin-top: 4px;
 }
 .grupo-row {
   display: flex;
