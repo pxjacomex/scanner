@@ -43,7 +43,8 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `js/camara.js` | Captura de la foto y flujo captura → pipeline → resultado (`processImage`). |
 | `js/deteccion.js` | `runPipeline` y todo el procesamiento de imagen: ArUco, rectificación, anclaje a los cuadros impresos, LUT de tonos, features, clasificación, anotación. Sin DOM. |
 | `js/calificacion.js` | Resultado del escaneo, tabla de resultados, duplicados, clave de respuestas y notas. |
-| `js/exportacion.js` | CSV, compartir (Web Share) y ver/descargar la imagen rectificada. |
+| `js/grupos.js` | Grupos de estudiantes (archivos CSV `id,email` de la carpeta "grupo" del teléfono, cargados con un selector de archivos y guardados en `localStorage`), nombre de la evaluación y grupo elegido. |
+| `js/exportacion.js` | CSV (nombre `<grupo>_<evaluación>_Clave_1_A…5_A__<fecha>.csv`, columna `alumno_email` y columna de nota titulada con la evaluación), compartir (Web Share) y ver/descargar la imagen rectificada. |
 | `js/calibracion.js` | Pestaña Calibrar (coordenadas de casilleros con vista previa). |
 | `js/parametros.js` | Pestaña Detector (sliders, parches de tono, previews, reclasificación en vivo). |
 | `sw.js` | Service worker: deja la app utilizable sin conexión. |
@@ -62,8 +63,8 @@ Además: la interfaz y los comentarios del código están en **español**; mante
   `onclick` del HTML. Las constantes/`let` de nivel superior (`STATE`,
   `CALIBRATION`, `COORDS`, `GEOM`…) también son compartidas.
 - El **orden de carga** en `index.html` es: `estado` → `motor` → `app` →
-  `camara` → `deteccion` → `calificacion` → `exportacion` → `calibracion` →
-  `parametros`, y al final `vendor/opencv.js` (`async`). Solo `estado.js` ejecuta
+  `camara` → `deteccion` → `calificacion` → `grupos` → `exportacion` →
+  `calibracion` → `parametros`, y al final `vendor/opencv.js` (`async`). Solo `estado.js` ejecuta
   código al cargarse que otros necesitan; el resto son definiciones que se usan
   cuando OpenCV ya inicializó (`onCVReady` → `initApp`).
 - Al **añadir un archivo** a `css/` o `js/`: enlazarlo en `index.html`, añadirlo a

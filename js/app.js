@@ -39,6 +39,9 @@ function initApp() {
   // Render parametros UI
   renderParamsUI();
 
+  // Grupos de estudiantes y datos de exportación (pestaña Resultados)
+  initGruposUI();
+
   // Inicializar tabla
   renderTable();
 }

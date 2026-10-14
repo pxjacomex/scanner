@@ -20,7 +20,7 @@
  */
 'use strict';
 
-const VERSION = 'v2';  // v2: index.html dividido en css/ y js/
+const VERSION = 'v3';  // v3: js/grupos.js (grupos de estudiantes y exportación)
 const SHELL_CACHE = 'omr-shell-' + VERSION;
 // Caché aparte para OpenCV.js y fuentes: no se borra al subir VERSION, así no
 // se vuelven a descargar ~8 MB con cada cambio de la app. Debe coincidir con la
@@ -37,6 +37,7 @@ const SHELL_ASSETS = [
   './js/camara.js',
   './js/deteccion.js',
   './js/calificacion.js',
+  './js/grupos.js',
   './js/exportacion.js',
   './js/calibracion.js',
   './js/parametros.js',
