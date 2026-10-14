@@ -51,10 +51,16 @@
       </div>
     </div>
 
-    <button class="btn btn-primary capture-btn">
+    <button class="btn btn-capture capture-btn">
       📸 Tomar foto
       <input type="file" accept="image/*" capture="environment" id="fileInput">
     </button>
+
+    <!-- Acciones del escaneo actual (visibles solo cuando hay un resultado) -->
+    <div class="btn-row hidden" id="scanActions" style="margin-top:2px">
+      <button class="btn btn-ghost" onclick="discardScan()">Descartar</button>
+      <button class="btn btn-primary" onclick="saveScan()">Guardar</button>
+    </div>
   </div>
 
   <!-- Resultado del escaneo (oculto hasta tener uno) -->
@@ -93,11 +99,6 @@
         <button class="btn btn-ghost" onclick="downloadRectified()" style="margin-bottom:0">⬇️ Descargar</button>
       </div>
     </details>
-
-    <div class="btn-row" style="margin-top:8px">
-      <button class="btn btn-ghost" onclick="discardScan()">Descartar</button>
-      <button class="btn btn-primary" onclick="saveScan()">Guardar</button>
-    </div>
   </div>
 </div>
 

@@ -12,6 +12,7 @@ function renderScanResult() {
   const s = STATE.currentScan;
 
   document.getElementById('scanResult').classList.remove('hidden');
+  document.getElementById('scanActions').classList.remove('hidden');
   document.getElementById('valID').textContent = s.ID;
   document.getElementById('valF').textContent = s.F;
 
@@ -244,6 +245,7 @@ function renderScanResult() {
 function discardScan() {
   STATE.currentScan = null;
   document.getElementById('scanResult').classList.add('hidden');
+  document.getElementById('scanActions').classList.add('hidden');
   document.getElementById('capturedImg').style.display = 'none';
   document.getElementById('resultCanvas').style.display = 'none';
   document.getElementById('empty').style.display = 'block';
@@ -290,6 +292,7 @@ function resolveDuplicate(action) {
   // Limpiar UI del scan actual
   STATE.currentScan = null;
   document.getElementById('scanResult').classList.add('hidden');
+  document.getElementById('scanActions').classList.add('hidden');
   document.getElementById('capturedImg').style.display = 'none';
   document.getElementById('resultCanvas').style.display = 'none';
   document.getElementById('empty').style.display = 'block';
@@ -302,6 +305,7 @@ function commitScan(scan) {
   STATE.currentScan = null;
 
   document.getElementById('scanResult').classList.add('hidden');
+  document.getElementById('scanActions').classList.add('hidden');
   document.getElementById('capturedImg').style.display = 'none';
   document.getElementById('resultCanvas').style.display = 'none';
   document.getElementById('empty').style.display = 'block';
