@@ -54,6 +54,7 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea (cabecera v2). Se genera con `generar_cabecera_v2.py` (cabecera) + `integrar_cabecera_v2.py` (la monta sobre el cuerpo de preguntas de `plantilla_A4_v1.pdf`). |
 | `templates/plantilla_A4_v1.pdf` | Plantilla original (histórico). Misma geometría de marcadores, casilleros y parches que la v2: la calibración por defecto sirve para ambas. |
 | `templates/cabecera_v2.*` | Cabecera v2 sola (PNG 300 dpi, PDF vectorial) y comparación con la v1. |
+| `templates/plantilla_A4_horizontal.docx` | Documento Word compatible con Google Docs: A4 horizontal, cabecera v2 (sin la línea de instrucción) como imagen a 600 dpi en la sección de encabezado, escalada al ancho útil (287 mm), márgenes de 4 mm arriba y a los lados; el cuerpo lleva las preguntas de la plantilla como párrafos editables. Lo genera `generar_plantilla_docx.py` (python-docx). La cabecera escalada se reconoce igual: la app solo usa proporciones relativas a los marcadores. |
 | `templates/cabecera_v2.odg` | La cabecera v2 como dibujo editable de LibreOffice Draw (página A4, cada casillero/marcador/parche es una forma). Lo genera `generar_cabecera_v2_odg.py`; al editar, no mover casilleros, marcadores ni parches o habrá que recalibrar. |
 | `pruebas/` | Fotos reales con el resultado esperado en el nombre, `fotos.json` y `regresion.html` (página que las pasa por el pipeline y compara; ver `pruebas/README.md`). No se cachea sin conexión. |
 
