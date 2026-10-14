@@ -75,12 +75,18 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 ## Cómo lee la hoja (y por qué hay anclaje)
 
 - Los 4 ArUco de los extremos dan la homografía que rectifica la cabecera a
-  205 × 22 mm (15 px/mm). Las celdas se leen en coordenadas calibradas
-  (`CALIBRATION` → `COORDS`) midiendo la fracción de píxeles oscuros sobre la
-  imagen normalizada con la LUT de los 4 parches de tono.
+  un marco de 207 × 24 mm **reales** (15 px/mm; `GEOM`): M0 queda en (5, 5) y
+  un punto de la hoja en (x_página − 1.56, y_página − 1.05). Las celdas se leen
+  en coordenadas calibradas (`CALIBRATION` → `COORDS`) midiendo la fracción de
+  píxeles oscuros sobre la imagen normalizada con la LUT de los 4 parches.
+- **Las coordenadas por defecto están derivadas del PDF de la plantilla**
+  (`CALIBRATION_DEFAULT`, `TONE_PATCHES_DEFAULT.coords`, `GEOM.MARCADORES_MM`),
+  no medidas sobre fotos. Si cambia la plantilla, recalcularlas a partir de la
+  geometría del PDF (ver `templates/generar_cabecera_v2.py`) y subir las claves
+  `STORAGE_KEY_CALIB` / `STORAGE_KEY_TONE_PATCHES` si cambia el marco.
 - **Cabecera v2 (marcadores centrales 4 y 5):** si se detectan, `rectificar`
   usa dos homografías (izquierda 0-4-5-2, derecha 4-1-3-5) unidas en la columna
-  central (`GEOM.MARCADORES_MM`), así un doblez por el centro se absorbe como
+  central (`GEOM.MARCADORES_MM`, x = 121.42 mm), así un doblez por el centro se absorbe como
   cambio de plano. Antes se comprueba que los centrales caigan cerca de su
   posición esperada (`GEOM.TOL_MARCADOR_CENTRAL_MM`); si no, o si faltan (hojas
   v1), homografía única. Parámetro `rectificar_por_mitades` (Detector → "②"),
