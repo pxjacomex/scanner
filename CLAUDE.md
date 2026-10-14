@@ -54,6 +54,7 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea (cabecera v2). Se genera con `generar_cabecera_v2.py` (cabecera) + `integrar_cabecera_v2.py` (la monta sobre el cuerpo de preguntas de `plantilla_A4_v1.pdf`). |
 | `templates/plantilla_A4_v1.pdf` | Plantilla original (histórico). Misma geometría de marcadores, casilleros y parches que la v2: la calibración por defecto sirve para ambas. |
 | `templates/cabecera_v2.*` | Cabecera v2 sola (PNG 300 dpi, PDF vectorial) y comparación con la v1. |
+| `templates/cabecera_v2.odg` | La cabecera v2 como dibujo editable de LibreOffice Draw (página A4, cada casillero/marcador/parche es una forma). Lo genera `generar_cabecera_v2_odg.py`; al editar, no mover casilleros, marcadores ni parches o habrá que recalibrar. |
 | `pruebas/` | Fotos reales con el resultado esperado en el nombre, `fotos.json` y `regresion.html` (página que las pasa por el pipeline y compara; ver `pruebas/README.md`). No se cachea sin conexión. |
 
 ## Cómo están organizados los scripts
