@@ -135,23 +135,29 @@ const DEBUG = {
 // Estructura: cada grupo tiene un x0 (primer casillero), una y comun, un paso x.
 // Tambien hay un parametro global roi_size que afecta a TODOS los casilleros.
 // Las coordenadas individuales se derivan de estos parametros.
+// Valores derivados de la plantilla (templates/plantilla_A4.pdf, misma geometría
+// en v1 y v2): casilleros de 4.0 mm cada 6.8 mm; filas en y = 14.00/20.80 mm de
+// página (código) y 14.03/20.83 (preguntas); F en y = 5.70. Convertidos al marco
+// con x - 1.56, y - 1.05 (ver GEOM).
 const CALIBRATION_DEFAULT = {
-  D1: { x0: 15.59, y: 11.75, paso_x: 6.72 },
-  D2: { x0: 15.49, y: 17.51, paso_x: 6.72 },
-  F:  { x0: 183.83, y: 4.67, paso_x: 6.64 },
-  P1: { x0: 94.80, y: 11.84, paso_x: 6.71 },
-  P2: { x0: 94.67, y: 17.66, paso_x: 6.71 },
-  P3: { x0: 132.43, y: 11.77, paso_x: 6.81 },
-  P4: { x0: 132.50, y: 17.60, paso_x: 6.71 },
-  P5: { x0: 170.53, y: 11.77, paso_x: 6.71 },
-  // Tamaño común de todos los casilleros (lado del cuadrado, en mm)
+  D1: { x0: 15.44,  y: 12.95, paso_x: 6.80 },
+  D2: { x0: 15.44,  y: 19.75, paso_x: 6.80 },
+  F:  { x0: 185.54, y: 4.65,  paso_x: 6.80 },
+  P1: { x0: 95.23,  y: 12.98, paso_x: 6.80 },
+  P2: { x0: 95.23,  y: 19.78, paso_x: 6.80 },
+  P3: { x0: 133.63, y: 12.98, paso_x: 6.80 },
+  P4: { x0: 133.63, y: 19.78, paso_x: 6.80 },
+  P5: { x0: 172.04, y: 13.00, paso_x: 6.80 },
+  // Tamaño común de todos los casilleros (lado del cuadrado, en mm). El cuadro
+  // impreso mide 4.0 mm; 4.2 deja 0.1 mm de holgura por lado.
   roi_size: 4.2,
 };
 
 // Calibracion activa (cargada de localStorage al inicio, o default)
 let CALIBRATION = JSON.parse(JSON.stringify(CALIBRATION_DEFAULT));
 
-const STORAGE_KEY_CALIB = 'omr_calibration_v1';
+// v2 = marco en mm reales (las calibraciones guardadas con el marco antiguo no sirven)
+const STORAGE_KEY_CALIB = 'omr_calibration_v2';
 
 function loadCalibration() {
   try {
@@ -229,31 +235,38 @@ function getRoiHalfPx() {
   return Math.round(sizeMm / 2 * GEOM.PX_PER_MM);
 }
 
-// Constantes de geometría (en mm)
+// Constantes de geometría (en mm REALES de la hoja).
+// El marco rectificado se define con los centros de los marcadores de esquina,
+// medidos sobre el PDF de la plantilla (idénticos en v1 y v2): M0 en
+// (6.56, 6.05) mm de página, M1 a 196.77 mm a la derecha y M2 a 13.80 mm abajo.
+// Con M0 en (OFFSET_X, OFFSET_Y) del marco, un punto de la hoja se convierte así:
+//   x_marco = 5 + (x_pagina - 6.56),  y_marco = 5 + (y_pagina - 6.05).
+// Antes se usaban 194.9 y 11.85 (medidos sobre fotos), lo que comprimía el
+// marco un 1 % en X y un 14 % en Y; todas las coordenadas por defecto de abajo
+// están derivadas ya con el marco real.
 const GEOM = {
   PX_PER_MM: 15,
   OFFSET_X_MM: 5, OFFSET_Y_MM: 5,
-  RECT_W_MM: 205, RECT_H_MM: 22,
-  M0_M1_MM: 194.9,    // distancia entre centros M0 y M1
-  M0_M2_MM: 11.85,    // distancia entre centros M0 y M2
-  ROI_SIZE_MM: 4.5,
+  RECT_W_MM: 207, RECT_H_MM: 24,
+  M0_M1_MM: 196.77,   // distancia entre centros M0 y M1 (PDF)
+  M0_M2_MM: 13.80,    // distancia entre centros M0 y M2 (PDF)
+  ROI_SIZE_MM: 4.2,
 };
 GEOM.W_PX = Math.round(GEOM.RECT_W_MM * GEOM.PX_PER_MM);
 GEOM.H_PX = Math.round(GEOM.RECT_H_MM * GEOM.PX_PER_MM);
 
-// Posición de cada marcador ArUco en el marco rectificado (mm de app).
-// - 0..3 (esquinas) definen el marco: M0 en (OFFSET_X, OFFSET_Y), etc.
-// - 4 y 5 (columna central, solo en la cabecera v2) se derivan de la plantilla:
-//   centros en (122.99, 14.03) y (122.99, 20.83) mm de página con M0 en
-//   (6.6, 6.09): x = 5 + (122.99 - 6.6) · 194.9/196.8 = 120.27;
-//   y = 5 + (y - 6.09) · 11.85/13.8 = 11.82 y 17.66.
+// Posición de cada marcador ArUco en el marco rectificado (mm).
+// - 0..3 (esquinas) definen el marco.
+// - 4 y 5 (columna central, solo en la cabecera v2): centros medidos en el PDF
+//   en (122.98, 14.01) y (122.98, 20.79) mm de página → marco (121.42, 12.96)
+//   y (121.42, 19.74).
 GEOM.MARCADORES_MM = {
   0: { x: GEOM.OFFSET_X_MM,                 y: GEOM.OFFSET_Y_MM },
   1: { x: GEOM.OFFSET_X_MM + GEOM.M0_M1_MM, y: GEOM.OFFSET_Y_MM },
   2: { x: GEOM.OFFSET_X_MM,                 y: GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM },
   3: { x: GEOM.OFFSET_X_MM + GEOM.M0_M1_MM, y: GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM },
-  4: { x: 120.27, y: 11.82 },
-  5: { x: 120.27, y: 17.66 },
+  4: { x: 121.42, y: 12.96 },
+  5: { x: 121.42, y: 19.74 },
 };
 // Si, proyectados con la homografía de las esquinas, los marcadores centrales
 // caen a más de esta distancia de su posición esperada, se consideran falsos y
@@ -272,11 +285,13 @@ GEOM.TOL_MARCADOR_CENTRAL_MM = 15;
 // junto a los demás parámetros del detector.
 const TONE_PATCHES_DEFAULT = {
   // Coordenadas en mm (centro del parche en el espacio rectificado)
+  // Derivadas de la plantilla: tira de 4 bandas de 6.225 mm desde x = 171.40 mm
+  // de página, centro vertical en y = 20.54 (v1: 4.9 mm de alto; v2: 6.4 mm).
   coords: [
-    { id: 'blanco',     x: 171.33, y: 17.67 },
-    { id: 'gris_claro', x: 177.47, y: 17.67 },
-    { id: 'gris_osc',   x: 183.47, y: 17.67 },
-    { id: 'negro',      x: 189.80, y: 17.67 },
+    { id: 'blanco',     x: 172.95, y: 19.49 },
+    { id: 'gris_claro', x: 179.18, y: 19.49 },
+    { id: 'gris_osc',   x: 185.40, y: 19.49 },
+    { id: 'negro',      x: 191.63, y: 19.49 },
   ],
   // Tamaño del ROI por parche (más pequeño que el parche real para evitar bordes)
   roi_w_mm: 4.0,
@@ -309,7 +324,8 @@ const TONE_PATCHES_DEFAULT = {
 // La estructura "viva" se mantiene en STATE.tonePatches para poder ajustarla.
 // Se inicializa con el default, se sobreescribe desde localStorage si hay
 // una versión persistida.
-const STORAGE_KEY_TONE_PATCHES = 'omr_tone_patches_v2';
+// v3 = marco en mm reales (ver GEOM)
+const STORAGE_KEY_TONE_PATCHES = 'omr_tone_patches_v3';
 
 function loadTonePatches() {
   try {
