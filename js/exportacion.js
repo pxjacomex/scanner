@@ -8,7 +8,8 @@
 // EXPORTACIÓN
 // ============================================
 // Clave de respuestas para el nombre del archivo: "Clave_1_A_2_C_3_B_4_D_5_A"
-// con la clave del formato 1 ("-" si una pregunta no tiene respuesta definida).
+// con la clave del formato 1 ("-" si una pregunta no tiene respuesta definida;
+// si admite varias letras van juntas: "1_AC").
 // Si el formato 2 tiene clave y es distinta, se añade "_F2_1_B_2_D_3_A_4_C_5_B".
 function claveParaNombre() {
   const Q = ['P1', 'P2', 'P3', 'P4', 'P5'];
@@ -41,8 +42,8 @@ function nombreArchivoCSV() {
 }
 
 // Contenido del CSV. Columnas: #, ID, alumno_email (del grupo elegido), Forma,
-// P1..P5, Aciertos, nota (la columna se titula con el nombre de la evaluación,
-// entre comillas; "Nota" si no se escribió ninguno), Dudoso, Fecha.
+// P1..P5, Aciertos, nota sobre 100 (la columna se titula con el nombre de la
+// evaluación, entre comillas; "Nota" si no se escribió ninguno), Dudoso, Fecha.
 function buildCSV() {
   const evaluacion = getNombreEvaluacion();
   const colNota = evaluacion ? `"${evaluacion.replace(/"/g, '""')}"` : 'Nota';
@@ -51,7 +52,7 @@ function buildCSV() {
   const lines = [headers.join(',')];
   STATE.results.forEach((r, i) => {
     const fmtP = v => v === 'AMBIGUO' ? '?' : (v || '');
-    const notaStr = r._nota !== null && r._nota !== undefined ? r._nota.toFixed(2) : '';
+    const notaStr = tieneNota(r) ? formatearNota(r._nota) : '';
     const aciertosStr = r._aciertos !== null && r._aciertos !== undefined ? r._aciertos : '';
     lines.push([
       i + 1, r.ID, emailDeAlumno(r.ID, grupo), r.F,
@@ -94,16 +95,16 @@ async function shareResults() {
   const file = new File([blob], nombreArchivoCSV(), { type: 'text/csv' });
 
   // Construir resumen de texto
-  const conNota = STATE.results.filter(r => r._nota !== null && r._nota !== undefined);
+  const conNota = STATE.results.filter(tieneNota);
   let summary = `📊 Resultados del examen\n`;
   summary += `Total: ${STATE.results.length} estudiantes\n`;
   if (conNota.length > 0) {
     const avg = conNota.reduce((a, r) => a + r._nota, 0) / conNota.length;
-    summary += `Promedio: ${avg.toFixed(2)}\n`;
+    summary += `Promedio: ${formatearNota(avg)} sobre ${NOTA.MAXIMA}\n`;
   }
   summary += '\n';
   STATE.results.slice(-15).forEach(r => {
-    const nota = r._nota !== null && r._nota !== undefined ? r._nota.toFixed(2) : '—';
+    const nota = tieneNota(r) ? formatearNota(r._nota) : '—';
     summary += `${r.ID} (F${r.F}): ${nota}${r.dudoso ? ' ⚠' : ''}\n`;
   });
 

@@ -14,7 +14,9 @@ const STATE = {
   currentScan: null,
   // Tabla de resultados [{id, F, P1..P5, score, dudoso, fecha}]
   results: [],
-  // Clave de respuestas por formato
+  // Clave de respuestas por formato: por pregunta, las letras correctas en
+  // orden ("A", "AC"...) o null si no está definida. El estudiante acierta
+  // con cualquiera de ellas; cada acierto vale 20 de 100 puntos.
   clave: {
     "1": { P1: null, P2: null, P3: null, P4: null, P5: null },
     "2": { P1: null, P2: null, P3: null, P4: null, P5: null }
