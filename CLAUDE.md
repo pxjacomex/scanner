@@ -36,8 +36,8 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | Archivo | Para qué |
 |---|---|
 | `index.html` | Solo HTML: pantallas, modales y las etiquetas que cargan css/ y js/. |
-| `css/estilos.css` | Todos los estilos. |
-| `js/estado.js` | Estado global (`STATE`, `DEBUG`), parámetros del detector, geometría, calibración, parches de tono y su persistencia en `localStorage`. |
+| `css/estilos.css` | Todos los estilos. `overscroll-behavior-y: contain` en `html, body` desactiva el gesto "tirar para refrescar" de Chrome Android. |
+| `js/estado.js` | Estado global (`STATE`, `DEBUG`), parámetros del detector, geometría, calibración, parches de tono, y la persistencia en `localStorage` de todo eso y de los escaneos guardados y la clave (`loadResultados`/`persistResultados`, `loadClave`/`persistClave`), para que una recarga no borre el trabajo. |
 | `js/motor.js` | Carga de OpenCV.js (`Module`, `onCVReady`, `cvLoadError`) y modo sin conexión (service worker, caché, aviso de versión). |
 | `js/app.js` | `initApp`, pestañas, modales, toasts. |
 | `js/camara.js` | Captura de la foto y flujo captura → pipeline → resultado (`processImage`). |

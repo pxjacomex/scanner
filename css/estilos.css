@@ -19,6 +19,13 @@
   --purple: #b87dff;
 }
 
+/* Sin "tirar para refrescar": en Chrome Android, deslizar hacia abajo estando
+   arriba del todo recargaba la página (y con ella se perdía el escaneo en
+   curso). overscroll-behavior desactiva ese gesto y el de navegar al borde. */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 body {
   font-family: 'Outfit', system-ui, Roboto, sans-serif;
   background: var(--bg);

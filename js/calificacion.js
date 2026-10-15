@@ -64,6 +64,7 @@ function alternarLetraClave(formato, q, letra) {
     ? actual.replace(letra, '')
     : (actual + letra).split('').sort().join('');
   STATE.clave[formato][q] = letras.length > 0 ? letras : null;
+  persistClave();
 }
 
 // ============================================
@@ -339,11 +340,13 @@ function resolveDuplicate(action) {
     // Eliminar todos los registros con ese ID y agregar el nuevo
     STATE.results = STATE.results.filter(r => r.ID !== pending.ID);
     STATE.results.push(pending);
+    guardarResultados();
     toast('Reemplazado', 'success');
   } else if (action === 'keep') {
     toast('Se mantuvo el anterior', 'warn');
   } else if (action === 'both') {
     STATE.results.push(pending);
+    guardarResultados();
     toast('Ambos guardados', 'success');
   }
 
@@ -358,8 +361,14 @@ function resolveDuplicate(action) {
   renderTable();
 }
 
+// Guarda la tabla en el dispositivo; avisa si no se pudo (p. ej. sin espacio).
+function guardarResultados() {
+  if (!persistResultados()) toast('No se pudo guardar en el dispositivo: exporta el CSV pronto', 'warn');
+}
+
 function commitScan(scan) {
   STATE.results.push(scan);
+  guardarResultados();
   STATE.currentScan = null;
 
   document.getElementById('scanResult').classList.add('hidden');
@@ -474,6 +483,7 @@ function renderClaveUI(formato) {
 function saveClave() {
   const f1Done = preguntasDefinidas(STATE.clave['1']);
   const f2Done = preguntasDefinidas(STATE.clave['2']);
+  persistClave();
   toast(`Clave guardada: F1 ${f1Done}/${NOTA.N_PREGUNTAS}, F2 ${f2Done}/${NOTA.N_PREGUNTAS}`, 'success');
 
   // Re-renderizar resultado actual si existe
@@ -508,6 +518,7 @@ function confirmClearAll() {
 }
 function doClearAll() {
   STATE.results = [];
+  persistResultados();
   closeModal('clearModal');
   renderTable();
   toast('Todos los registros borrados', 'warn');

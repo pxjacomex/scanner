@@ -49,6 +49,82 @@ const STATE = {
 };
 
 // ============================================
+// RESULTADOS Y CLAVE: PERSISTENCIA
+// ============================================
+// Los escaneos guardados y la clave de respuestas se conservan en localStorage
+// para que una recarga (gesto de refrescar, aviso de nueva versión, Chrome
+// cerrado por Android mientras se usa la cámara) no borre el trabajo hecho.
+const STORAGE_KEY_RESULTADOS = 'omr_resultados_v1';
+const STORAGE_KEY_CLAVE = 'omr_clave_v1';
+
+function loadResultados() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_RESULTADOS);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        STATE.results = parsed.filter(r => r && typeof r === 'object' && typeof r.ID === 'string');
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('Error cargando resultados guardados:', e);
+  }
+  STATE.results = [];
+  return false;
+}
+
+function persistResultados() {
+  try {
+    // _nota y _aciertos se recalculan al cargar; no hace falta guardarlos.
+    const limpio = STATE.results.map(r => {
+      const o = {};
+      for (const k in r) if (!k.startsWith('_')) o[k] = r[k];
+      return o;
+    });
+    localStorage.setItem(STORAGE_KEY_RESULTADOS, JSON.stringify(limpio));
+    return true;
+  } catch (e) {
+    console.warn('Error guardando resultados:', e);
+    return false;
+  }
+}
+
+// Clave: por formato ("1", "2") y pregunta (P1..P5), letras A-D ordenadas o null.
+function loadClave() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_CLAVE);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      for (const f of Object.keys(STATE.clave)) {
+        const fuente = parsed && parsed[f];
+        if (!fuente || typeof fuente !== 'object') continue;
+        for (const q of Object.keys(STATE.clave[f])) {
+          const v = fuente[q];
+          if (typeof v === 'string' && /^[A-D]{1,4}$/.test(v)) {
+            STATE.clave[f][q] = Array.from(new Set(v.split(''))).sort().join('');
+          }
+        }
+      }
+      return true;
+    }
+  } catch (e) {
+    console.warn('Error cargando la clave guardada:', e);
+  }
+  return false;
+}
+
+function persistClave() {
+  try {
+    localStorage.setItem(STORAGE_KEY_CLAVE, JSON.stringify(STATE.clave));
+    return true;
+  } catch (e) {
+    console.warn('Error guardando la clave:', e);
+    return false;
+  }
+}
+
+// ============================================
 // PARAMETROS DEL DETECTOR (ajustables vía sliders)
 // ============================================
 // Versión simplificada (v4): el detector trabaja sobre una imagen

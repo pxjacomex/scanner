@@ -29,6 +29,11 @@ function initApp() {
   // File input
   document.getElementById('fileInput').addEventListener('change', onCapture);
 
+  // Clave y escaneos guardados en el dispositivo (sobreviven a una recarga)
+  loadClave();
+  loadResultados();
+  recomputeAllScores();
+
   // Render clave UI
   renderClaveUI('1');
   renderClaveUI('2');
