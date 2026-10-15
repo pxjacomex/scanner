@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a0a0f">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/estilos.css">
+<link rel="stylesheet" href="css/estilos.css?v=4">
 </head>
 <body>
 
@@ -331,16 +331,16 @@
      El orden importa (ver CLAUDE.md): primero el estado, luego el motor, el
      arranque y las pantallas. Al añadir un archivo, incluirlo también en
      SHELL_ASSETS de sw.js y subir VERSION. -->
-<script src="js/estado.js"></script>
-<script src="js/motor.js"></script>
-<script src="js/app.js"></script>
-<script src="js/camara.js"></script>
-<script src="js/deteccion.js"></script>
-<script src="js/calificacion.js"></script>
-<script src="js/grupos.js"></script>
-<script src="js/exportacion.js"></script>
-<script src="js/calibracion.js"></script>
-<script src="js/parametros.js"></script>
+<script src="js/estado.js?v=4"></script>
+<script src="js/motor.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+<script src="js/camara.js?v=4"></script>
+<script src="js/deteccion.js?v=4"></script>
+<script src="js/calificacion.js?v=4"></script>
+<script src="js/grupos.js?v=4"></script>
+<script src="js/exportacion.js?v=4"></script>
+<script src="js/calibracion.js?v=4"></script>
+<script src="js/parametros.js?v=4"></script>
 <!-- Copia propia del build oficial de OpenCV.js (ver CLAUDE.md). Va al final para
      que `Module` (js/motor.js) y el resto de la app existan antes de ejecutarse. -->
 <script async src="vendor/opencv.js" id="opencvScript" onerror="cvLoadError()"></script>

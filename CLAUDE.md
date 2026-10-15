@@ -117,8 +117,18 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 - `sw.js` guarda `index.html`, `css/`, `js/`, el manifest y los iconos al
   instalarse (caché `omr-shell-<VERSION>`), y los sirve con *stale-while-
   revalidate*: carga al instante desde caché y, si hay red, busca una versión
-  nueva en segundo plano. Si algún archivo de texto cambió, avisa a la página y
-  esta muestra un toast para recargar.
+  nueva en segundo plano. Si algún archivo de texto cambió, renueva el shell
+  completo y después avisa a la página, que muestra un toast para recargar.
+- El worker entrega el shell con `Cache-Control: no-store` (`entregar()`), y al
+  instalarse y renovar pide los archivos con `cache: 'no-cache'`. Motivo: Chrome
+  guarda en memoria los scripts que recibe una pestaña y, mientras los considere
+  frescos según su `Cache-Control` (GitHub Pages envía `max-age=600`), los
+  reutiliza en la siguiente carga **sin consultar al worker**; sin esto, tras
+  tocar el aviso la página mezclaba el `index.html` nuevo con scripts viejos
+  durante 10 minutos (o hasta cerrar la pestaña). Las etiquetas de `index.html`
+  llevan `?v=4` por la misma razón (fue necesario una sola vez, para que los
+  dispositivos con el worker anterior pidieran URLs nuevas); el worker ignora la
+  query al buscar en caché (`cacheKey`), así que no hace falta cambiarla.
 - OpenCV.js (`vendor/opencv.js`, ≈10 MB) y las fuentes de Google se sirven
   *cache-first* desde la caché `omr-vendor-v2`. El worker guarda OpenCV.js al
   instalarse (normalmente sale de la caché HTTP, sin segunda descarga), así que
@@ -145,8 +155,9 @@ cachés; marcar "Offline" y recargar para comprobar el modo sin conexión.
 
 ## Al hacer cambios
 
-- Cambiar `index.html`, `css/` o `js/` **no** exige tocar `sw.js`: el shell se
-  renueva solo y la página avisa de la nueva versión.
+- Cambiar `index.html`, `css/` o `js/` **no** exige tocar `sw.js` ni el `?v=` de
+  las etiquetas: el shell se renueva solo y la página avisa de la nueva versión
+  (un toque en el aviso basta).
 - Si añades o quitas archivos del shell (css, js, manifest, iconos) o quieres
   forzar una limpieza de caché en los dispositivos, actualiza `SHELL_ASSETS` y
   sube `VERSION` en `sw.js`.

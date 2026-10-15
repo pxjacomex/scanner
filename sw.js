@@ -8,7 +8,9 @@
  *  - Shell de la app (index.html, css/, js/, manifest, iconos): stale-while-
  *    revalidate. Se sirve al instante desde caché; si hay red se busca una
  *    versión nueva en segundo plano y, si algún archivo de texto cambió, se
- *    avisa a la pestaña para que ofrezca recargar.
+ *    renueva el shell completo y se avisa a la pestaña para que ofrezca
+ *    recargar. Las respuestas salen con Cache-Control: no-store para que el
+ *    navegador no las reutilice sin pasar por el worker (ver entregar()).
  *  - Recursos grandes y estables (OpenCV.js en vendor/, fuentes de Google):
  *    cache-first. Se descargan una vez y se reutilizan siempre. OpenCV.js se
  *    guarda ya al instalar el worker, así el modo sin conexión funciona desde
@@ -20,7 +22,7 @@
  */
 'use strict';
 
-const VERSION = 'v3';  // v3: js/grupos.js (grupos de estudiantes y exportación)
+const VERSION = 'v4';  // v4: el shell se entrega con Cache-Control: no-store (ver entregar())
 const SHELL_CACHE = 'omr-shell-' + VERSION;
 // Caché aparte para OpenCV.js y fuentes: no se borra al subir VERSION, así no
 // se vuelven a descargar ~8 MB con cada cambio de la app. Debe coincidir con la
@@ -55,7 +57,12 @@ const OPENCV_URL = new URL('./vendor/opencv.js', self.location.href).href;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(Promise.all([
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_ASSETS)),
+    // 'no-cache': se valida cada archivo con el servidor (304 si no cambió) en
+    // vez de aceptar la copia de la caché HTTP del navegador, que puede ser una
+    // versión anterior aún "fresca" (GitHub Pages: max-age=600).
+    caches.open(SHELL_CACHE).then((cache) => cache.addAll(
+      SHELL_ASSETS.map((asset) => new Request(asset, { cache: 'no-cache' }))
+    )),
     // OpenCV.js: solo si aún no está (la página acaba de descargarlo para la
     // etiqueta <script>, así que casi siempre sale de la caché HTTP del navegador).
     caches.open(VENDOR_CACHE).then(async (cache) => {
@@ -126,6 +133,43 @@ async function cacheFirst(event, request) {
   return response;
 }
 
+// Chrome conserva en memoria los scripts y estilos que recibe una pestaña y,
+// mientras los considere "frescos" según su Cache-Control (GitHub Pages envía
+// max-age=600), los reutiliza en la siguiente carga SIN preguntar al worker.
+// Así, una versión nueva ya guardada aquí no llegaba a la página hasta pasados
+// 10 minutos o hasta cerrar la pestaña, aunque se tocara el aviso de actualizar.
+// Por eso el shell se entrega con Cache-Control: no-store: cada carga pasa por
+// el worker (sigue siendo instantánea, sale de la Cache Storage) y recibe
+// siempre la copia más reciente.
+function entregar(response) {
+  if (!response || response.type === 'opaque' || response.type === 'opaqueredirect' || response.redirected) return response;
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', 'no-store');
+  // El cuerpo ya viene descomprimido; estas cabeceras describían el original.
+  headers.delete('Content-Encoding');
+  headers.delete('Content-Length');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+// Al detectar un archivo distinto se renuevan TODOS los del shell antes de
+// avisar a la página: cuando el usuario toca el aviso y recarga, la versión
+// completa ya está guardada (si no, podía mezclar html nuevo con scripts viejos).
+let renovacionShell = null;
+function renovarShell() {
+  if (!renovacionShell) {
+    renovacionShell = caches.open(SHELL_CACHE)
+      .then((cache) => Promise.all(SHELL_ASSETS.map(async (asset) => {
+        const key = new URL(asset, self.location.href).href;
+        try {
+          const resp = await fetch(key, { cache: 'no-cache', credentials: 'same-origin' });
+          if (resp.ok && !resp.redirected) await cache.put(key, resp);
+        } catch (_) { /* sin red: se reintentará en la próxima detección */ }
+      })))
+      .finally(() => { renovacionShell = null; });
+  }
+  return renovacionShell;
+}
+
 async function staleWhileRevalidate(event, request) {
   const isNavigation = request.mode === 'navigate';
   const key = cacheKey(request.url);
@@ -141,33 +185,38 @@ async function staleWhileRevalidate(event, request) {
       // No se guardan respuestas redirigidas (Chrome rechaza servirlas a una
       // navegación); se devuelven tal cual y el navegador sigue la redirección.
       if (!response.ok || response.redirected) return response;
+      let cambio = false;
       if (cachedForCompare) {
         try {
           const [oldText, newText] = await Promise.all([
             cachedForCompare.text(),
             response.clone().text(),
           ]);
-          if (oldText !== newText) updateDetected(event.resultingClientId || event.clientId);
+          cambio = oldText !== newText;
         } catch (_) { /* sin aviso si no se pudo comparar */ }
       }
       await cache.put(key, response.clone());
+      if (cambio) {
+        await renovarShell();
+        updateDetected(event.resultingClientId || event.clientId);
+      }
       return response;
     })
     .catch(() => null);
 
   if (cached) {
     event.waitUntil(networkPromise);
-    return cached;
+    return entregar(cached);
   }
 
   const response = await networkPromise;
   if (response) {
-    return (isNavigation && response.redirected) ? Response.redirect(response.url, 302) : response;
+    return (isNavigation && response.redirected) ? Response.redirect(response.url, 302) : entregar(response);
   }
 
   if (isNavigation) {
     const fallback = await cache.match(INDEX_URL, { ignoreVary: true });
-    if (fallback) return fallback;
+    if (fallback) return entregar(fallback);
   }
   return new Response('Sin conexión y el recurso no está en caché.', {
     status: 503,
