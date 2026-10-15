@@ -42,9 +42,9 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `js/app.js` | `initApp`, pestañas, modales, toasts. |
 | `js/camara.js` | Captura de la foto y flujo captura → pipeline → resultado (`processImage`). |
 | `js/deteccion.js` | `runPipeline` y todo el procesamiento de imagen: ArUco, rectificación, anclaje a los cuadros impresos, LUT de tonos, features, clasificación, anotación. Sin DOM. |
-| `js/calificacion.js` | Resultado del escaneo, tabla de resultados, duplicados, clave de respuestas y notas. |
+| `js/calificacion.js` | Resultado del escaneo, tabla de resultados, duplicados, clave de respuestas y notas. La nota es sobre 100 (20 puntos por acierto, constantes en `NOTA`). La clave de cada pregunta admite varias letras (`"AC"`): el estudiante acierta si la única casilla que pintó es cualquiera de ellas (`esAcierto`); la detección no cambia. |
 | `js/grupos.js` | Grupos de estudiantes (archivos CSV `id,email` de la carpeta "grupo" del teléfono, cargados con un selector de archivos y guardados en `localStorage`), nombre de la evaluación y grupo elegido. |
-| `js/exportacion.js` | CSV (nombre `<grupo>_<evaluación>_Clave_1_A…5_A__<fecha>.csv`, columna `alumno_email` y columna de nota titulada con la evaluación), compartir (Web Share) y ver/descargar la imagen rectificada. |
+| `js/exportacion.js` | CSV (nombre `<grupo>_<evaluación>_Clave_1_A…5_A__<fecha>.csv`, con las letras juntas si una pregunta admite varias: `1_AC`; columna `alumno_email` y columna de nota sobre 100 titulada con la evaluación), compartir (Web Share) y ver/descargar la imagen rectificada. |
 | `js/calibracion.js` | Pestaña Calibrar (coordenadas de casilleros con vista previa). |
 | `js/parametros.js` | Pestaña Detector (sliders, parches de tono, previews, reclasificación en vivo). |
 | `sw.js` | Service worker: deja la app utilizable sin conexión. |

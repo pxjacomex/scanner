@@ -5,6 +5,68 @@
 // ============================================================================
 
 // ============================================
+// NOTA SOBRE 100 Y CLAVE CON VARIAS OPCIONES
+// ============================================
+// La clave de cada pregunta (STATE.clave[formato][Pn]) es una cadena con las
+// letras correctas en orden ("A", "AC", "ABCD") o null si no está definida.
+// El estudiante acierta la pregunta si la única respuesta que pintó es
+// cualquiera de esas letras; "AMBIGUO" (varias casillas pintadas) o en blanco
+// no puntúan. La detección no cambia: solo la comparación con la clave.
+const NOTA = {
+  N_PREGUNTAS: 5,
+  MAXIMA: 100,
+  UMBRAL_ALTA: 60,    // color verde a partir de esta nota
+  UMBRAL_MEDIA: 40,   // ámbar a partir de esta; rojo por debajo
+};
+NOTA.POR_PREGUNTA = NOTA.MAXIMA / NOTA.N_PREGUNTAS;   // 20 puntos por acierto
+
+// ¿La pregunta tiene al menos una letra correcta definida?
+function claveDefinida(v) {
+  return typeof v === 'string' && v.length > 0;
+}
+// ¿Están definidas las 5 preguntas del formato?
+function claveCompleta(claveFormato) {
+  return !!claveFormato && Object.values(claveFormato).every(claveDefinida);
+}
+function preguntasDefinidas(claveFormato) {
+  return claveFormato ? Object.values(claveFormato).filter(claveDefinida).length : 0;
+}
+// Acierto: la respuesta detectada es una sola letra incluida en la clave.
+function esAcierto(respuesta, correctas) {
+  return typeof respuesta === 'string' && respuesta !== 'AMBIGUO' && respuesta.length === 1 &&
+    claveDefinida(correctas) && correctas.includes(respuesta);
+}
+function contarAciertos(registro, claveFormato) {
+  let n = 0;
+  for (let i = 1; i <= NOTA.N_PREGUNTAS; i++) {
+    if (esAcierto(registro[`P${i}`], claveFormato[`P${i}`])) n++;
+  }
+  return n;
+}
+function notaDeAciertos(aciertos) {
+  return Math.round(aciertos * NOTA.POR_PREGUNTA);
+}
+function tieneNota(r) {
+  return r._nota !== null && r._nota !== undefined;
+}
+// Texto de una nota o promedio: entero si lo es, si no con un decimal (73.3).
+function formatearNota(n) {
+  const r = Math.round(n * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+}
+function claseNota(n) {
+  return n >= NOTA.UMBRAL_ALTA ? 'high' : (n >= NOTA.UMBRAL_MEDIA ? 'mid' : 'low');
+}
+// Añade o quita una letra de la clave de una pregunta (selección múltiple).
+function alternarLetraClave(formato, q, letra) {
+  const actual = STATE.clave[formato][q] || '';
+  const letras = actual.includes(letra)
+    ? actual.replace(letra, '')
+    : (actual + letra).split('').sort().join('');
+  STATE.clave[formato][q] = letras.length > 0 ? letras : null;
+}
+
+// ============================================
 // UI: RESULTADO DEL ESCANEO
 // ============================================
 function renderScanResult() {
@@ -26,11 +88,9 @@ function renderScanResult() {
 
   // Verificar si hay clave para este formato
   const claveFormato = STATE.clave[s.F];
-  const todasClavesDefinidas = claveFormato &&
-    Object.values(claveFormato).every(v => v !== null);
+  const todasClavesDefinidas = claveCompleta(claveFormato);
 
   let aciertos = 0;
-  let totalEvaluables = 5;
 
   for (let i = 1; i <= 5; i++) {
     const q = `P${i}`;
@@ -46,13 +106,13 @@ function renderScanResult() {
     if (detected === 'AMBIGUO') {
       cssClass = 'dudoso';
     } else if (detected && correct && todasClavesDefinidas) {
-      if (detected === correct) {
+      if (esAcierto(detected, correct)) {
         cssClass = 'correct';
         aciertos++;
       } else {
         cssClass = 'wrong';
       }
-    } else if (!detected && correct === null) {
+    } else if (!detected && !claveDefinida(correct)) {
       cssClass = 'empty';
     }
 
@@ -69,13 +129,11 @@ function renderScanResult() {
 
   if (todasClavesDefinidas && s.F !== '?') {
     scoreSection.classList.remove('hidden');
-    const nota = aciertos * 0.2;
-    scoreValEl.textContent = nota.toFixed(2);
-    scoreLabel.textContent = `${aciertos} de 5 aciertos`;
+    const nota = notaDeAciertos(aciertos);
+    scoreValEl.textContent = formatearNota(nota);
+    scoreLabel.textContent = `${aciertos} de ${NOTA.N_PREGUNTAS} aciertos · sobre ${NOTA.MAXIMA}`;
     scoreDisp.classList.remove('high', 'mid', 'low');
-    if (nota >= 0.6) scoreDisp.classList.add('high');
-    else if (nota >= 0.4) scoreDisp.classList.add('mid');
-    else scoreDisp.classList.add('low');
+    scoreDisp.classList.add(claseNota(nota));
 
     s._nota = nota;
     s._aciertos = aciertos;
@@ -334,10 +392,10 @@ function renderTable() {
 
   // Stats
   document.getElementById('statTotal').textContent = count;
-  const conNota = STATE.results.filter(r => r._nota !== null && r._nota !== undefined);
+  const conNota = STATE.results.filter(tieneNota);
   if (conNota.length > 0) {
     const avg = conNota.reduce((a, r) => a + r._nota, 0) / conNota.length;
-    document.getElementById('statAvg').textContent = avg.toFixed(2);
+    document.getElementById('statAvg').textContent = formatearNota(avg);
   } else {
     document.getElementById('statAvg').textContent = '—';
   }
@@ -366,8 +424,8 @@ function renderTable() {
   tbody.innerHTML = recent.map((r, i) => {
     const num = count - i;
     const fmtP = v => v === 'AMBIGUO' ? '<span style="color:var(--warn)">?</span>' : (v || '<span style="color:var(--text-muted)">–</span>');
-    const notaStr = r._nota !== null && r._nota !== undefined ? r._nota.toFixed(2) : '—';
-    const notaClass = r._nota >= 0.6 ? 'high' : (r._nota >= 0.4 ? 'mid' : (r._nota !== null && r._nota !== undefined ? 'low' : ''));
+    const notaStr = tieneNota(r) ? formatearNota(r._nota) : '—';
+    const notaClass = tieneNota(r) ? claseNota(r._nota) : '';
     const dudaIcon = r.dudoso ? '<span style="color:var(--warn)">⚠</span>' : '';
     return `<tr>
       <td>${num}</td>
@@ -393,36 +451,30 @@ function renderClaveUI(formato) {
   cont.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
     const q = `P${i}`;
-    const valor = STATE.clave[formato][q];
+    const valor = STATE.clave[formato][q] || '';
     const row = document.createElement('div');
     row.className = 'answer-row';
+    // Cada letra se marca o desmarca por separado: una pregunta puede tener
+    // varias respuestas válidas ("AC"); el estudiante acierta con cualquiera.
     row.innerHTML = `<div class="q-name">${q}</div>` +
       ['A', 'B', 'C', 'D'].map(l => {
-        const sel = valor === l ? 'selected' : '';
-        return `<button data-fmt="${formato}" data-q="${q}" data-letra="${l}" class="${sel}">${l}</button>`;
+        const sel = valor.includes(l) ? 'selected' : '';
+        return `<button type="button" data-fmt="${formato}" data-q="${q}" data-letra="${l}" class="${sel}" aria-pressed="${sel ? 'true' : 'false'}">${l}</button>`;
       }).join('');
     cont.appendChild(row);
   }
   cont.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', () => {
-      const f = b.dataset.fmt, q = b.dataset.q, l = b.dataset.letra;
-      // Toggle: si ya estaba seleccionado, deseleccionar
-      if (STATE.clave[f][q] === l) {
-        STATE.clave[f][q] = null;
-      } else {
-        STATE.clave[f][q] = l;
-      }
-      renderClaveUI(f);
+      alternarLetraClave(b.dataset.fmt, b.dataset.q, b.dataset.letra);
+      renderClaveUI(b.dataset.fmt);
     });
   });
 }
 
 function saveClave() {
-  const f1 = STATE.clave['1'];
-  const f2 = STATE.clave['2'];
-  const f1Done = Object.values(f1).filter(v => v !== null).length;
-  const f2Done = Object.values(f2).filter(v => v !== null).length;
-  toast(`Clave guardada: F1 ${f1Done}/5, F2 ${f2Done}/5`, 'success');
+  const f1Done = preguntasDefinidas(STATE.clave['1']);
+  const f2Done = preguntasDefinidas(STATE.clave['2']);
+  toast(`Clave guardada: F1 ${f1Done}/${NOTA.N_PREGUNTAS}, F2 ${f2Done}/${NOTA.N_PREGUNTAS}`, 'success');
 
   // Re-renderizar resultado actual si existe
   if (STATE.currentScan) renderScanResult();
@@ -435,16 +487,13 @@ function saveClave() {
 function recomputeAllScores() {
   for (const r of STATE.results) {
     const claveFormato = STATE.clave[r.F];
-    const todasDefinidas = claveFormato && Object.values(claveFormato).every(v => v !== null);
-    if (todasDefinidas && r.F !== '?') {
-      let aciertos = 0;
-      for (let i = 1; i <= 5; i++) {
-        if (r[`P${i}`] === claveFormato[`P${i}`]) aciertos++;
-      }
-      r._nota = aciertos * 0.2;
+    if (claveCompleta(claveFormato) && r.F !== '?') {
+      const aciertos = contarAciertos(r, claveFormato);
+      r._nota = notaDeAciertos(aciertos);
       r._aciertos = aciertos;
     } else {
       r._nota = null;
+      r._aciertos = null;
     }
   }
 }
