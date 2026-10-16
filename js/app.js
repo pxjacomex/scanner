@@ -35,6 +35,7 @@ function initApp() {
   recomputeAllScores();
 
   // Render clave UI
+  renderClaveOpciones();
   renderClaveUI('1');
   renderClaveUI('2');
 
