@@ -21,6 +21,9 @@ const STATE = {
     "1": { P1: null, P2: null, P3: null, P4: null, P5: null },
     "2": { P1: null, P2: null, P3: null, P4: null, P5: null }
   },
+  // Casilla "Opciones duplicadas" (pestaña Clave): false = una sola opción por
+  // pregunta (la nueva reemplaza a la anterior); true = se pueden dejar varias.
+  claveOpcionesDuplicadas: false,
   // Para resolver duplicado
   pendingScan: null,
   pendingResolver: null,
@@ -90,12 +93,14 @@ function persistResultados() {
   }
 }
 
-// Clave: por formato ("1", "2") y pregunta (P1..P5), letras A-D ordenadas o null.
+// Clave: por formato ("1", "2") y pregunta (P1..P5), letras A-D ordenadas o null,
+// más la casilla "Opciones duplicadas" (clave opcionesDuplicadas del mismo objeto).
 function loadClave() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_CLAVE);
     if (stored) {
       const parsed = JSON.parse(stored);
+      STATE.claveOpcionesDuplicadas = !!(parsed && parsed.opcionesDuplicadas === true);
       for (const f of Object.keys(STATE.clave)) {
         const fuente = parsed && parsed[f];
         if (!fuente || typeof fuente !== 'object') continue;
@@ -116,7 +121,7 @@ function loadClave() {
 
 function persistClave() {
   try {
-    localStorage.setItem(STORAGE_KEY_CLAVE, JSON.stringify(STATE.clave));
+    localStorage.setItem(STORAGE_KEY_CLAVE, JSON.stringify({ ...STATE.clave, opcionesDuplicadas: STATE.claveOpcionesDuplicadas }));
     return true;
   } catch (e) {
     console.warn('Error guardando la clave:', e);

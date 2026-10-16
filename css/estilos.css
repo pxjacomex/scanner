@@ -354,6 +354,33 @@ body {
   line-height: 1.4;
 }
 
+/* Casilla con etiqueta (p. ej. "Opciones duplicadas" en la pestaña Clave) */
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.check-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+.check-row .check-note {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
 .answer-row {
   display: grid;
   grid-template-columns: 60px repeat(4, 1fr);

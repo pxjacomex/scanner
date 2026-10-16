@@ -57,14 +57,44 @@ function formatearNota(n) {
 function claseNota(n) {
   return n >= NOTA.UMBRAL_ALTA ? 'high' : (n >= NOTA.UMBRAL_MEDIA ? 'mid' : 'low');
 }
-// Añade o quita una letra de la clave de una pregunta (selección múltiple).
+// Toque en una letra de la clave de una pregunta.
+// - Sin "Opciones duplicadas": una sola letra; tocar otra reemplaza a la
+//   anterior y tocar la misma la quita.
+// - Con "Opciones duplicadas": cada letra se añade o se quita por separado.
 function alternarLetraClave(formato, q, letra) {
   const actual = STATE.clave[formato][q] || '';
-  const letras = actual.includes(letra)
-    ? actual.replace(letra, '')
-    : (actual + letra).split('').sort().join('');
+  let letras;
+  if (STATE.claveOpcionesDuplicadas) {
+    letras = actual.includes(letra)
+      ? actual.replace(letra, '')
+      : (actual + letra).split('').sort().join('');
+  } else {
+    letras = actual === letra ? '' : letra;
+  }
   STATE.clave[formato][q] = letras.length > 0 ? letras : null;
   persistClave();
+}
+
+// Casilla "Opciones duplicadas". Al desmarcarla, las preguntas que ya tenían
+// varias letras las conservan (se ven marcadas) hasta que se toque una letra,
+// que entonces queda como única; se avisa si hay alguna en ese estado.
+function setOpcionesDuplicadas(activo) {
+  STATE.claveOpcionesDuplicadas = !!activo;
+  persistClave();
+  renderClaveOpciones();
+  if (!activo) {
+    const conVarias = Object.values(STATE.clave)
+      .flatMap(f => Object.values(f))
+      .filter(v => claveDefinida(v) && v.length > 1).length;
+    if (conVarias > 0) {
+      toast(`${conVarias} pregunta${conVarias > 1 ? 's' : ''} con varias opciones: toca una letra para dejar solo una`, 'warn');
+    }
+  }
+}
+
+function renderClaveOpciones() {
+  const cb = document.getElementById('claveDuplicadas');
+  if (cb) cb.checked = STATE.claveOpcionesDuplicadas;
 }
 
 // ============================================
