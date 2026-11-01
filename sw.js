@@ -99,8 +99,6 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === self.location.origin) {
     // pruebas/ (fotos y página de regresión) no se cachea: va a la red.
     if (url.pathname.includes('/pruebas/')) return;
-    // generador/ (generador de pruebas) tiene su propio service worker.
-    if (url.pathname.includes('/generador/')) return;
     event.respondWith(staleWhileRevalidate(event, request));
   }
   // Cualquier otro origen: va directo a la red (sin interceptar).
