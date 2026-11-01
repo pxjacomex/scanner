@@ -1,0 +1,531 @@
+{
+ "tipo": "banco-generador-omr",
+ "version": 1,
+ "exportado": "2026-11-01T12:00:00.000Z",
+ "nota": "Preguntas de ejemplo de Física para probar el generador. Se pueden borrar o editar.",
+ "preguntas": [
+  {
+   "id": "q_ej_mru_dist",
+   "tema": "Cinemática",
+   "tipo": "calculo",
+   "enunciado": "Un automóvil se mueve en línea recta con rapidez constante de {v} m/s durante {t} s. ¿Qué distancia recorre en ese tiempo?",
+   "imagen": null,
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "",
+     "formula": "v*t",
+     "correcta": true
+    },
+    {
+     "texto": "",
+     "formula": "v/t",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "v+t",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "2*v*t",
+     "correcta": false
+    }
+   ],
+   "variables": [
+    "v",
+    "t"
+   ],
+   "sets": [
+    {
+     "v": "12",
+     "t": "5"
+    },
+    {
+     "v": "15",
+     "t": "4"
+    },
+    {
+     "v": "20",
+     "t": "6"
+    },
+    {
+     "v": "8",
+     "t": "9"
+    }
+   ],
+   "formato": {
+    "modo": "auto",
+    "decimales": 1,
+    "unidad": "m"
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_caida_libre",
+   "tema": "Cinemática",
+   "tipo": "calculo",
+   "enunciado": "Se deja caer una piedra desde el reposo a una altura de {h} m. Si g = 10 m/s^{2} y se desprecia el roce con el aire, ¿cuánto tarda en llegar al suelo?",
+   "imagen": null,
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "",
+     "formula": "sqrt(2*h/10)",
+     "correcta": true
+    },
+    {
+     "texto": "",
+     "formula": "h/10",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "sqrt(h/10)",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "2*h/10",
+     "correcta": false
+    }
+   ],
+   "variables": [
+    "h"
+   ],
+   "sets": [
+    {
+     "h": "30"
+    },
+    {
+     "h": "45"
+    },
+    {
+     "h": "80"
+    },
+    {
+     "h": "125"
+    }
+   ],
+   "formato": {
+    "modo": "auto",
+    "decimales": 1,
+    "unidad": "s"
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_grafico_xt",
+   "tema": "Cinemática",
+   "tipo": "fija",
+   "enunciado": "El gráfico muestra la posición x de un móvil en función del tiempo t. ¿Qué tipo de movimiento describe y cuál es su rapidez?",
+   "imagen": {
+    "datos": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMzAwIDIwMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBIZWx2ZXRpY2EsIHNhbnMtc2VyaWYiPgo8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2ZmZiIvPgo8bGluZSB4MT0iNDAiIHkxPSIxNzAiIHgyPSIyODAiIHkyPSIxNzAiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxsaW5lIHgxPSI0MCIgeTE9IjE3MCIgeDI9IjQwIiB5Mj0iMjAiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjxwb2x5Z29uIHBvaW50cz0iMjgwLDE3MCAyNzIsMTY2IDI3MiwxNzQiIGZpbGw9IiMwMDAiLz4KPHBvbHlnb24gcG9pbnRzPSI0MCwyMCAzNiwyOCA0NCwyOCIgZmlsbD0iIzAwMCIvPgo8dGV4dCB4PSIyNjgiIHk9IjE5MCIgZm9udC1zaXplPSIxNCIgZm9udC1zdHlsZT0iaXRhbGljIj50IChzKTwvdGV4dD4KPHRleHQgeD0iOCIgeT0iMzAiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtc3R5bGU9Iml0YWxpYyI+eCAobSk8L3RleHQ+CjxnIHN0cm9rZT0iI2JiYiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtZGFzaGFycmF5PSIzIDMiPgo8bGluZSB4MT0iMTAwIiB5MT0iMTcwIiB4Mj0iMTAwIiB5Mj0iMTMwIi8+PGxpbmUgeDE9IjQwIiB5MT0iMTMwIiB4Mj0iMTAwIiB5Mj0iMTMwIi8+CjxsaW5lIHgxPSIyMjAiIHkxPSIxNzAiIHgyPSIyMjAiIHkyPSI1MCIvPjxsaW5lIHgxPSI0MCIgeTE9IjUwIiB4Mj0iMjIwIiB5Mj0iNTAiLz4KPC9nPgo8bGluZSB4MT0iNDAiIHkxPSIxNzAiIHgyPSIyNTAiIHkyPSIzMCIgc3Ryb2tlPSIjMTU2NWMwIiBzdHJva2Utd2lkdGg9IjMiLz4KPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTMwIiByPSI0IiBmaWxsPSIjMTU2NWMwIi8+PGNpcmNsZSBjeD0iMjIwIiBjeT0iNTAiIHI9IjQiIGZpbGw9IiMxNTY1YzAiLz4KPHRleHQgeD0iOTYiIHk9IjE4NiIgZm9udC1zaXplPSIxMiI+MjwvdGV4dD48dGV4dCB4PSIyMTYiIHk9IjE4NiIgZm9udC1zaXplPSIxMiI+NjwvdGV4dD4KPHRleHQgeD0iMTgiIHk9IjEzNCIgZm9udC1zaXplPSIxMiI+MTA8L3RleHQ+PHRleHQgeD0iMTgiIHk9IjU0IiBmb250LXNpemU9IjEyIj4zMDwvdGV4dD4KPC9zdmc+",
+    "ancho_mm": 52,
+    "posicion": "derecha",
+    "ancho_px": 300,
+    "alto_px": 200
+   },
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "Rectilíneo uniforme, 5 m/s",
+     "formula": "",
+     "correcta": true
+    },
+    {
+     "texto": "Rectilíneo uniforme, 15 m/s",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "Uniformemente acelerado, 5 m/s^{2}",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "Está en reposo",
+     "formula": "",
+     "correcta": false
+    }
+   ],
+   "variables": [],
+   "sets": [],
+   "formato": {
+    "modo": "auto",
+    "decimales": 2,
+    "unidad": ""
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_vectorial",
+   "tema": "Magnitudes",
+   "tipo": "fija",
+   "enunciado": "¿Cuál de las siguientes magnitudes físicas es **vectorial**?",
+   "imagen": null,
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "Velocidad",
+     "formula": "",
+     "correcta": true
+    },
+    {
+     "texto": "Masa",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "Tiempo",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "Temperatura",
+     "formula": "",
+     "correcta": false
+    }
+   ],
+   "variables": [],
+   "sets": [],
+   "formato": {
+    "modo": "auto",
+    "decimales": 2,
+    "unidad": ""
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_newton2",
+   "tema": "Dinámica",
+   "tipo": "calculo",
+   "enunciado": "Sobre un cuerpo de masa {m} kg actúa una fuerza neta de {F} N. ¿Cuál es la aceleración que adquiere?",
+   "imagen": null,
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "",
+     "formula": "F/m",
+     "correcta": true
+    },
+    {
+     "texto": "",
+     "formula": "m/F",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "F*m",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "F-m",
+     "correcta": false
+    }
+   ],
+   "variables": [
+    "m",
+    "F"
+   ],
+   "sets": [
+    {
+     "m": "2",
+     "F": "10"
+    },
+    {
+     "m": "4",
+     "F": "6"
+    },
+    {
+     "m": "5",
+     "F": "20"
+    },
+    {
+     "m": "10",
+     "F": "15"
+    }
+   ],
+   "formato": {
+    "modo": "auto",
+    "decimales": 2,
+    "unidad": "m/s^{2}"
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_plano_inclinado",
+   "tema": "Dinámica",
+   "tipo": "calculo",
+   "enunciado": "Un bloque de masa {m} kg está apoyado sobre un plano inclinado sin roce que forma un ángulo de {ang}° con la horizontal (ver figura). Con g = 10 m/s^{2}, ¿cuál es el módulo de la componente del peso paralela al plano?",
+   "imagen": {
+    "datos": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTkwIiB2aWV3Qm94PSIwIDAgMzAwIDE5MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBIZWx2ZXRpY2EsIHNhbnMtc2VyaWYiPgo8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE5MCIgZmlsbD0iI2ZmZiIvPgo8cG9seWdvbiBwb2ludHM9IjIwLDE3MCAyODAsMTcwIDI4MCw1MCIgZmlsbD0iI2U4ZThlOCIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiLz4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTUwLDExMCkgcm90YXRlKC0yNC44KSI+CjxyZWN0IHg9Ii0yNSIgeT0iLTMwIiB3aWR0aD0iNTAiIGhlaWdodD0iMzAiIGZpbGw9IiNmZmQ1NGYiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjx0ZXh0IHg9Ii04IiB5PSItMTAiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIj5tPC90ZXh0Pgo8L2c+CjxwYXRoIGQ9Ik0gNjAgMTcwIEEgNDAgNDAgMCAwIDAgNTYgMTUyIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMS41Ii8+Cjx0ZXh0IHg9IjY0IiB5PSIxNjAiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtc3R5bGU9Iml0YWxpYyI+zrg8L3RleHQ+CjxsaW5lIHgxPSIxNTAiIHkxPSI4OCIgeDI9IjE1MCIgeTI9IjE0MCIgc3Ryb2tlPSIjYzYyODI4IiBzdHJva2Utd2lkdGg9IjIuNSIvPgo8cG9seWdvbiBwb2ludHM9IjE1MCwxNDYgMTQ1LDEzNiAxNTUsMTM2IiBmaWxsPSIjYzYyODI4Ii8+Cjx0ZXh0IHg9IjE1NiIgeT0iMTQyIiBmb250LXNpemU9IjEzIiBmaWxsPSIjYzYyODI4IiBmb250LXN0eWxlPSJpdGFsaWMiPm1nPC90ZXh0Pgo8L3N2Zz4=",
+    "ancho_mm": 48,
+    "posicion": "derecha",
+    "ancho_px": 300,
+    "alto_px": 190
+   },
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "",
+     "formula": "m*10*sind(ang)",
+     "correcta": true
+    },
+    {
+     "texto": "",
+     "formula": "m*10*cosd(ang)",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "m*10",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "m*10*tand(ang)",
+     "correcta": false
+    }
+   ],
+   "variables": [
+    "m",
+    "ang"
+   ],
+   "sets": [
+    {
+     "m": "2",
+     "ang": "30"
+    },
+    {
+     "m": "4",
+     "ang": "30"
+    },
+    {
+     "m": "5",
+     "ang": "37"
+    },
+    {
+     "m": "3",
+     "ang": "53"
+    }
+   ],
+   "formato": {
+    "modo": "auto",
+    "decimales": 1,
+    "unidad": "N"
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_energia_cinetica",
+   "tema": "Energía",
+   "tipo": "calculo",
+   "enunciado": "Calcula la energía cinética de un cuerpo de {m} kg que se mueve con una rapidez de {v} m/s.",
+   "imagen": null,
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "",
+     "formula": "0.5*m*v^2",
+     "correcta": true
+    },
+    {
+     "texto": "",
+     "formula": "m*v",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "m*v^2",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "0.5*m*v",
+     "correcta": false
+    }
+   ],
+   "variables": [
+    "m",
+    "v"
+   ],
+   "sets": [
+    {
+     "m": "2",
+     "v": "3"
+    },
+    {
+     "m": "4",
+     "v": "5"
+    },
+    {
+     "m": "10",
+     "v": "4"
+    },
+    {
+     "m": "0,5",
+     "v": "8"
+    }
+   ],
+   "formato": {
+    "modo": "auto",
+    "decimales": 1,
+    "unidad": "J"
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_ohm",
+   "tema": "Electricidad",
+   "tipo": "calculo",
+   "enunciado": "En el circuito de la figura, la pila entrega {V} V y la resistencia es de {R} Ω. ¿Qué corriente circula por el circuito?",
+   "imagen": {
+    "datos": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMzAwIDE4MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBIZWx2ZXRpY2EsIHNhbnMtc2VyaWYiPgo8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2ZmZiIvPgo8cGF0aCBkPSJNIDYwIDQwIEggMTIwIE0gMTgwIDQwIEggMjQwIFYgMTQwIEggNjAgViA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggZD0iTSAxMjAgNDAgbCA2IC0xMCBsIDEyIDIwIGwgMTIgLTIwIGwgMTIgMjAgbCAxMiAtMjAgbCA2IDEwIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMiIvPgo8dGV4dCB4PSIxMzgiIHk9IjIyIiBmb250LXNpemU9IjE0IiBmb250LXN0eWxlPSJpdGFsaWMiPlI8L3RleHQ+CjxsaW5lIHgxPSI0MCIgeTE9IjkwIiB4Mj0iODAiIHkyPSI5MCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjYiLz4KPGxpbmUgeDE9IjYwIiB5MT0iNzAiIHgyPSI2MCIgeTI9Ijc4IiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMiIvPgo8bGluZSB4MT0iNDgiIHkxPSI4MCIgeDI9IjcyIiB5Mj0iODAiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIzIi8+CjxsaW5lIHgxPSI1NCIgeTE9Ijg4IiB4Mj0iNjYiIHkyPSI4OCIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiLz4KPGxpbmUgeDE9IjYwIiB5MT0iOTAiIHgyPSI2MCIgeTI9Ijk4IiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMiIvPgo8dGV4dCB4PSIyMCIgeT0iOTAiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtc3R5bGU9Iml0YWxpYyI+VjwvdGV4dD4KPHBvbHlnb24gcG9pbnRzPSIyMDAsMTM2IDE5MCwxMzEgMTkwLDE0MSIgZmlsbD0iIzAwMCIvPgo8dGV4dCB4PSIxOTYiIHk9IjE2MCIgZm9udC1zaXplPSIxMyIgZm9udC1zdHlsZT0iaXRhbGljIj5JPC90ZXh0Pgo8L3N2Zz4=",
+    "ancho_mm": 46,
+    "posicion": "derecha",
+    "ancho_px": 300,
+    "alto_px": 180
+   },
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "",
+     "formula": "V/R",
+     "correcta": true
+    },
+    {
+     "texto": "",
+     "formula": "R/V",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "V*R",
+     "correcta": false
+    },
+    {
+     "texto": "",
+     "formula": "V-R",
+     "correcta": false
+    }
+   ],
+   "variables": [
+    "V",
+    "R"
+   ],
+   "sets": [
+    {
+     "V": "12",
+     "R": "4"
+    },
+    {
+     "V": "9",
+     "R": "3"
+    },
+    {
+     "V": "6",
+     "R": "12"
+    },
+    {
+     "V": "24",
+     "R": "8"
+    }
+   ],
+   "formato": {
+    "modo": "auto",
+    "decimales": 2,
+    "unidad": "A"
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_tercera_ley",
+   "tema": "Dinámica",
+   "tipo": "fija",
+   "enunciado": "Según la tercera ley de Newton, cuando un libro descansa sobre una mesa, la fuerza de reacción a la fuerza que la Tierra ejerce sobre el libro es:",
+   "imagen": null,
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "La fuerza gravitatoria que el libro ejerce sobre la Tierra",
+     "formula": "",
+     "correcta": true
+    },
+    {
+     "texto": "La fuerza normal que la mesa ejerce sobre el libro",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "La fuerza que el libro ejerce sobre la mesa",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "No existe, porque el libro está en reposo",
+     "formula": "",
+     "correcta": false
+    }
+   ],
+   "variables": [],
+   "sets": [],
+   "formato": {
+    "modo": "auto",
+    "decimales": 2,
+    "unidad": ""
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  },
+  {
+   "id": "q_ej_unidades",
+   "tema": "Magnitudes",
+   "tipo": "fija",
+   "enunciado": "La unidad de **potencia** en el Sistema Internacional es el:",
+   "imagen": null,
+   "mezclar": true,
+   "opciones": [
+    {
+     "texto": "watt (W)",
+     "formula": "",
+     "correcta": true
+    },
+    {
+     "texto": "joule (J)",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "newton (N)",
+     "formula": "",
+     "correcta": false
+    },
+    {
+     "texto": "pascal (Pa)",
+     "formula": "",
+     "correcta": false
+    }
+   ],
+   "variables": [],
+   "sets": [],
+   "formato": {
+    "modo": "auto",
+    "decimales": 2,
+    "unidad": ""
+   },
+   "creada": "2026-11-01T12:00:00.000Z",
+   "modificada": "2026-11-01T12:00:00.000Z"
+  }
+ ]
+}

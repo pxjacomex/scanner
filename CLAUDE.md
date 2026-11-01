@@ -57,6 +57,7 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `templates/plantilla_A4_horizontal.docx` | Documento Word compatible con Google Docs: A4 horizontal, cabecera v2 (sin la línea de instrucción) como imagen a 600 dpi en la sección de encabezado, escalada al ancho útil (287 mm), márgenes de 4 mm arriba y a los lados; el cuerpo lleva las preguntas de la plantilla como párrafos editables. Lo genera `generar_plantilla_docx.py` (python-docx). La cabecera escalada se reconoce igual: la app solo usa proporciones relativas a los marcadores. |
 | `templates/cabecera_v2.odg` | La cabecera v2 como dibujo editable de LibreOffice Draw (página A4, cada casillero/marcador/parche es una forma). Lo genera `generar_cabecera_v2_odg.py`; al editar, no mover casilleros, marcadores ni parches o habrá que recalibrar. |
 | `pruebas/` | Fotos reales con el resultado esperado en el nombre, `fotos.json` y `regresion.html` (página que las pasa por el pipeline y compara; ver `pruebas/README.md`). No se cachea sin conexión. |
+| `generador/` | **Generador de pruebas**: página aparte (misma filosofía: sin build, sin dependencias, todo en el navegador) que arma pruebas en dos formas (A y B) desde un banco de preguntas con datos variables y fórmulas, e imprime cada prueba en media hoja A4 con esta misma cabecera (F = 1 para la forma A, F = 2 para la B). Tiene su propio `sw.js` (ámbito `generador/`; el worker principal no intercepta esa carpeta), `README.md` (arquitectura) y `GUIA.md` (puesta en marcha paso a paso). |
 
 ## Cómo están organizados los scripts
 
