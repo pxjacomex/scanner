@@ -39,6 +39,17 @@
 <div class="section active" id="section-scan">
   <div class="card">
     <h2>1. Capturar plantilla</h2>
+
+    <!-- Cabecera impresa que se va a leer: cambia la geometría del escáner y
+         las preguntas de la clave, la tabla y el CSV -->
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Cabecera de la plantilla</label>
+      <div class="segmented" id="plantillaSelector" role="radiogroup" aria-label="Cabecera de la plantilla">
+        <button type="button" class="seg-btn" data-plantilla="5" role="radio" onclick="seleccionarPlantilla('5')">5 preguntas</button>
+        <button type="button" class="seg-btn" data-plantilla="10" role="radio" onclick="seleccionarPlantilla('10')">10 preguntas</button>
+      </div>
+    </div>
+
     <div class="preview" id="preview">
       <span class="empty" id="empty">📷</span>
       <img id="capturedImg" alt="Captura" style="display:none">
@@ -155,19 +166,9 @@
 
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>ID</th>
-            <th>F</th>
-            <th>P1</th>
-            <th>P2</th>
-            <th>P3</th>
-            <th>P4</th>
-            <th>P5</th>
-            <th>Nota</th>
-            <th>⚠</th>
-          </tr>
+        <!-- La cabecera (P1..P5 o P1..P10) la genera renderTable() -->
+        <thead id="resultsHead">
+          <tr><th>#</th><th>ID</th><th>F</th><th>P1</th><th>P2</th><th>P3</th><th>P4</th><th>P5</th><th>Nota</th><th>⚠</th></tr>
         </thead>
         <tbody id="resultsTable"></tbody>
       </table>
@@ -184,9 +185,12 @@
 <div class="section" id="section-config">
   <div class="card">
     <h2>Clave de respuestas</h2>
-    <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">
-      Define las respuestas correctas para cada formato de prueba. Cada acierto vale 20 puntos (5 preguntas × 20 = 100).
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px">
+      Define las respuestas correctas para cada formato de prueba. La nota es sobre 100 y se reparte entre las preguntas
+      que puntúan: las que tienen respuesta o BONUS (por ejemplo, con 8 preguntas definidas cada acierto vale 12,5).
+      Una pregunta con BONUS cuenta como acierto para todos, marquen lo que marquen.
     </p>
+    <div class="field-note" id="claveNotaPlantilla" style="margin:0 0 12px"></div>
 
     <!-- Desmarcado: una sola opción por pregunta (la nueva reemplaza a la anterior).
          Marcado: se pueden dejar varias; el estudiante acierta con cualquiera. -->

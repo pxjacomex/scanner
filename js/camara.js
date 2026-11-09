@@ -103,14 +103,11 @@ function processImage(imgElement, onDone) {
       STATE.currentScan = {
         ID: result.classification.ID,
         F: result.classification.F,
-        P1: result.classification.P1,
-        P2: result.classification.P2,
-        P3: result.classification.P3,
-        P4: result.classification.P4,
-        P5: result.classification.P5,
+        preguntas: numPreguntas(),   // cabecera con la que se leyó (5 o 10)
         dudoso: result.classification.dudoso,
         ambiguos: result.classification.ambiguos,
       };
+      for (const q of listaPreguntas()) STATE.currentScan[q] = result.classification[q];
 
       renderScanResult();
       hideProcessing();

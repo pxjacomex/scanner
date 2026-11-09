@@ -8,17 +8,20 @@
 // EXPORTACIÓN
 // ============================================
 // Clave de respuestas para el nombre del archivo: "Clave_1_A_2_C_3_B_4_D_5_A"
-// con la clave del formato 1 ("-" si una pregunta no tiene respuesta definida;
-// si admite varias letras van juntas: "1_AC").
+// (hasta 10_x con la cabecera de 10 preguntas) con la clave del formato 1:
+// "-" si una pregunta no tiene respuesta definida, las letras juntas si admite
+// varias ("1_AC") y "BONUS" si la pregunta tiene BONUS.
 // Si el formato 2 tiene clave y es distinta, se añade "_F2_1_B_2_D_3_A_4_C_5_B".
 function claveParaNombre() {
-  const Q = ['P1', 'P2', 'P3', 'P4', 'P5'];
-  const seg = (c) => Q.map((q, i) => `${i + 1}_${(c && c[q]) || '-'}`).join('_');
-  const c1 = STATE.clave['1'] || {}, c2 = STATE.clave['2'] || {};
-  let s = 'Clave_' + seg(c1);
-  const f2Definida = Q.some(q => c2[q]);
-  const distinta = Q.some(q => (c1[q] || null) !== (c2[q] || null));
-  if (f2Definida && distinta) s += '_F2_' + seg(c2);
+  const Q = listaPreguntas();
+  const seg = (f) => Q.map((q, i) => {
+    const c = STATE.clave[f] || {};
+    return `${i + 1}_${esBonus(f, q) ? 'BONUS' : (c[q] || '-')}`;
+  }).join('_');
+  const s1 = seg('1'), s2 = seg('2');
+  let s = 'Clave_' + s1;
+  const f2Definida = Q.some(q => (STATE.clave['2'] && STATE.clave['2'][q]) || esBonus('2', q));
+  if (f2Definida && s2 !== s1) s += '_F2_' + s2;
   return s;
 }
 
@@ -42,22 +45,26 @@ function nombreArchivoCSV() {
 }
 
 // Contenido del CSV. Columnas: #, ID, alumno_email (del grupo elegido), Forma,
-// P1..P5, Aciertos, nota sobre 100 (la columna se titula con el nombre de la
-// evaluación, entre comillas; "Nota" si no se escribió ninguno), Dudoso, Fecha.
+// P1..Pn (las de la cabecera en uso), Aciertos, Evaluadas (preguntas que
+// puntúan: con clave o BONUS), nota sobre 100 (la columna se titula con el
+// nombre de la evaluación, entre comillas; "Nota" si no se escribió ninguno),
+// Dudoso, Fecha.
 function buildCSV() {
   const evaluacion = getNombreEvaluacion();
   const colNota = evaluacion ? `"${evaluacion.replace(/"/g, '""')}"` : 'Nota';
   const grupo = getGrupoSeleccionado();
-  const headers = ['#', 'ID', 'alumno_email', 'Forma', 'P1', 'P2', 'P3', 'P4', 'P5', 'Aciertos', colNota, 'Dudoso', 'Fecha'];
+  const Q = listaPreguntas();
+  const headers = ['#', 'ID', 'alumno_email', 'Forma'].concat(Q, ['Aciertos', 'Evaluadas', colNota, 'Dudoso', 'Fecha']);
   const lines = [headers.join(',')];
   STATE.results.forEach((r, i) => {
     const fmtP = v => v === 'AMBIGUO' ? '?' : (v || '');
     const notaStr = tieneNota(r) ? formatearNota(r._nota) : '';
     const aciertosStr = r._aciertos !== null && r._aciertos !== undefined ? r._aciertos : '';
+    const evaluadasStr = r._evaluables !== null && r._evaluables !== undefined ? r._evaluables : '';
     lines.push([
       i + 1, r.ID, emailDeAlumno(r.ID, grupo), r.F,
-      fmtP(r.P1), fmtP(r.P2), fmtP(r.P3), fmtP(r.P4), fmtP(r.P5),
-      aciertosStr, notaStr,
+      ...Q.map(q => fmtP(r[q])),
+      aciertosStr, evaluadasStr, notaStr,
       r.dudoso ? 'Si' : 'No',
       r.fecha
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));

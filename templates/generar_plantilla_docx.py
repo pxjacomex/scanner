@@ -8,10 +8,12 @@ lados) para que los marcadores ArUco no caigan en la zona que las impresoras
 no imprimen; el diseño tiene además 3,6 mm de blanco propios, así que los
 marcadores quedan a unos 9 mm del borde del papel.
 
-Uso: python3 templates/generar_plantilla_docx.py <cabecera_600dpi.png> <salida.docx> [plantilla_base.pdf]
-  - cabecera_600dpi.png: cabecera v2 recortada (210 x 25 mm) a 600 dpi, p. ej.
-      pdftoppm -r 600 -png -singlefile -x 0 -y 0 -W 4961 -H 591 templates/cabecera_v2.pdf cabecera_600
+Uso: python3 templates/generar_plantilla_docx.py <cabecera_600dpi.png> <salida.docx> [plantilla_base.pdf | --preguntas N]
+  - cabecera_600dpi.png: cabecera recortada a 600 dpi, sin la línea de instrucción, p. ej.
+      v2 (210 x 25 mm): pdftoppm -r 600 -png -singlefile -x 0 -y 0 -W 4961 -H 591 templates/cabecera_v2.pdf cabecera_600
+      v3 (210 x 32 mm): pdftoppm -r 600 -png -singlefile -x 0 -y 0 -W 4961 -H 756 templates/cabecera_v3.pdf cabecera_v3_600
   - plantilla_base.pdf (opcional): PDF del que copiar las preguntas al cuerpo.
+  - --preguntas N (opcional): en vez de un PDF, N preguntas de relleno ("1:" … "N:" con a) b) c) d)).
 """
 import sys, re
 from docx import Document
@@ -20,7 +22,12 @@ from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 PNG, OUT = sys.argv[1], sys.argv[2]
-BASE_PDF = sys.argv[3] if len(sys.argv) > 3 else None
+BASE_PDF, N_RELLENO = None, 0
+if len(sys.argv) > 3:
+    if sys.argv[3] == '--preguntas':
+        N_RELLENO = int(sys.argv[4])
+    else:
+        BASE_PDF = sys.argv[3]
 
 MARGEN_SUP_MM, MARGEN_LAT_MM, MARGEN_INF_MM = 4, 4, 10
 ANCHO_MM, ALTO_MM = 297, 210          # A4 horizontal
@@ -69,6 +76,10 @@ if BASE_PDF:
                 parrafos.append(texto)
             else:
                 parrafos[-1] += ' ' + texto
+for n in range(1, N_RELLENO + 1):
+    parrafos.append(f'{n}: ')
+    for letra in 'abcd':
+        parrafos.append(f'{letra}) ')
 for texto in parrafos:
     par = doc.add_paragraph(texto)
     if re.match(r'^\d+:', texto):
@@ -77,7 +88,7 @@ for texto in parrafos:
 if not parrafos:
     doc.add_paragraph('')
 
-doc.core_properties.title = 'Plantilla OMR A4 horizontal (cabecera v2)'
+doc.core_properties.title = 'Plantilla OMR A4 horizontal (cabecera %s)' % ('v3, 10 preguntas' if N_RELLENO == 10 else 'v2')
 doc.core_properties.author = ''
 doc.save(OUT)
 print('escrito:', OUT, '| párrafos en el cuerpo:', len(parrafos))

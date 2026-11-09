@@ -474,7 +474,7 @@ function buildGroups() {
     grupos.D2.push({ id: `D2_${i}`, etiqueta: String(i) });
   }
   grupos.F = [{ id: 'F_1', etiqueta: '1' }, { id: 'F_2', etiqueta: '2' }];
-  for (const q of ['P1', 'P2', 'P3', 'P4', 'P5']) {
+  for (const q of listaPreguntas()) {
     grupos[q] = ['A', 'B', 'C', 'D'].map(l => ({ id: `${q}_${l}`, etiqueta: l }));
   }
   return grupos;
@@ -536,18 +536,16 @@ function classify(features) {
   const idStr = (decisiones.D1 === 'AMBIGUO' ? '?' : (decisiones.D1 || '?'))
               + (decisiones.D2 === 'AMBIGUO' ? '?' : (decisiones.D2 || '?'));
 
-  return {
+  const out = {
     ID: idStr,
     F: decisiones.F === 'AMBIGUO' ? '?' : (decisiones.F || '?'),
-    P1: decisiones.P1,
-    P2: decisiones.P2,
-    P3: decisiones.P3,
-    P4: decisiones.P4,
-    P5: decisiones.P5,
+    preguntas: numPreguntas(),
     dudoso: ambiguos.length > 0,
     ambiguos,
     detalles,
   };
+  for (const q of listaPreguntas()) out[q] = decisiones[q];
+  return out;
 }
 
 
@@ -575,12 +573,8 @@ function annotateRectified(rect, classification, features) {
     D1: classification.ID[0],
     D2: classification.ID[1],
     F: classification.F,
-    P1: classification.P1,
-    P2: classification.P2,
-    P3: classification.P3,
-    P4: classification.P4,
-    P5: classification.P5,
   };
+  for (const q of listaPreguntas()) ganadores[q] = classification[q];
 
   for (const grupo in ganadores) {
     const valor = ganadores[grupo];
@@ -622,7 +616,7 @@ function drawROIBox(rect, roiId, color) {
 // de lectura caen entre dos cuadros. Aquí se corrige ANTES de medir:
 //   1) detectarCuadrosImpresos: umbral adaptativo + contornos → centros (mm)
 //      de todos los cuadros de ~roi_size mm de la imagen rectificada.
-//   2) anclarCasillas: para cada grupo (fila D1, D2, F, P1…P5) se busca el
+//   2) anclarCasillas: para cada grupo (fila D1, D2, F, P1…Pn) se busca el
 //      desplazamiento (dx, dy) que hace coincidir el MAYOR número de celdas
 //      con un cuadro detectado (así no se confunde con la casilla vecina), y
 //      cada celda se centra en su cuadro; las tapadas por el garabato toman el
