@@ -37,14 +37,14 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 |---|---|
 | `index.html` | Solo HTML: pantallas, modales y las etiquetas que cargan css/ y js/. |
 | `css/estilos.css` | Todos los estilos. `overscroll-behavior-y: contain` en `html, body` desactiva el gesto "tirar para refrescar" de Chrome Android. |
-| `js/estado.js` | Estado global (`STATE`, `DEBUG`), parámetros del detector, geometría, calibración, parches de tono, y la persistencia en `localStorage` de todo eso y de los escaneos guardados y la clave (`loadResultados`/`persistResultados`, `loadClave`/`persistClave`), para que una recarga no borre el trabajo. |
+| `js/estado.js` | Estado global (`STATE`, `DEBUG`), parámetros del detector, geometría, calibración, parches de tono, y la persistencia en `localStorage` de todo eso y de los escaneos guardados y la clave (`loadResultados`/`persistResultados`, `loadClave`/`persistClave`), para que una recarga no borre el trabajo. También las dos cabeceras que lee la app (`PLANTILLAS['5']` y `['10']`, ver "Cabeceras") y `aplicarPlantilla()`. |
 | `js/motor.js` | Carga de OpenCV.js (`Module`, `onCVReady`, `cvLoadError`) y modo sin conexión (service worker, caché, aviso de versión). |
 | `js/app.js` | `initApp`, pestañas, modales, toasts. |
 | `js/camara.js` | Captura de la foto y flujo captura → pipeline → resultado (`processImage`). |
 | `js/deteccion.js` | `runPipeline` y todo el procesamiento de imagen: ArUco, rectificación, anclaje a los cuadros impresos, LUT de tonos, features, clasificación, anotación. Sin DOM. |
-| `js/calificacion.js` | Resultado del escaneo, tabla de resultados, duplicados, clave de respuestas y notas. La nota es sobre 100 (20 puntos por acierto, constantes en `NOTA`). La clave de cada pregunta admite varias letras (`"AC"`): el estudiante acierta si la única casilla que pintó es cualquiera de ellas (`esAcierto`); la detección no cambia. La casilla "Opciones duplicadas" (`STATE.claveOpcionesDuplicadas`, persistida con la clave) decide si al tocar una letra se añade a las ya marcadas o reemplaza a la anterior (por defecto reemplaza). |
+| `js/calificacion.js` | Resultado del escaneo, tabla de resultados, duplicados, clave de respuestas y notas. La nota es sobre 100 repartida entre las preguntas de la cabecera en uso que **puntúan** (con clave o BONUS): `100 × aciertos / evaluables`, con un decimal si hace falta (`evaluarRegistro`); una pregunta sin clave ni BONUS no cuenta. La clave de cada pregunta admite varias letras (`"AC"`): el estudiante acierta si la única casilla que pintó es cualquiera de ellas (`esAcierto`); la detección no cambia. BONUS (`STATE.bonus[formato][Pn]`, casilla por pregunta en la pestaña Clave) hace que la pregunta cuente como acierto para todos, marquen lo que marquen. La casilla "Opciones duplicadas" (`STATE.claveOpcionesDuplicadas`, persistida con la clave) decide si al tocar una letra se añade a las ya marcadas o reemplaza a la anterior (por defecto reemplaza). |
 | `js/grupos.js` | Grupos de estudiantes (archivos CSV `id,email` de la carpeta "grupo" del teléfono, cargados con un selector de archivos y guardados en `localStorage`), nombre de la evaluación y grupo elegido. |
-| `js/exportacion.js` | CSV (nombre `<grupo>_<evaluación>_Clave_1_A…5_A__<fecha>.csv`, con las letras juntas si una pregunta admite varias: `1_AC`; columna `alumno_email` y columna de nota sobre 100 titulada con la evaluación), compartir (Web Share) y ver/descargar la imagen rectificada. |
+| `js/exportacion.js` | CSV (nombre `<grupo>_<evaluación>_Clave_1_A…5_A__<fecha>.csv`, hasta `10_x` con la cabecera de 10 preguntas, con las letras juntas si una pregunta admite varias: `1_AC`, y `BONUS` si la tiene; columnas P1..Pn de la cabecera en uso, `alumno_email`, `Aciertos`, `Evaluadas` y la nota sobre 100 titulada con la evaluación), compartir (Web Share) y ver/descargar la imagen rectificada. |
 | `js/calibracion.js` | Pestaña Calibrar (coordenadas de casilleros con vista previa). |
 | `js/parametros.js` | Pestaña Detector (sliders, parches de tono, previews, reclasificación en vivo). |
 | `sw.js` | Service worker: deja la app utilizable sin conexión. |
@@ -54,7 +54,9 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 | `templates/plantilla_A4.pdf` | Plantilla imprimible que se escanea (cabecera v2). Se genera con `generar_cabecera_v2.py` (cabecera) + `integrar_cabecera_v2.py` (la monta sobre el cuerpo de preguntas de `plantilla_A4_v1.pdf`). |
 | `templates/plantilla_A4_v1.pdf` | Plantilla original (histórico). Misma geometría de marcadores, casilleros y parches que la v2: la calibración por defecto sirve para ambas. |
 | `templates/cabecera_v2.*` | Cabecera v2 sola (PNG 300 dpi, PDF vectorial) y comparación con la v1. |
+| `templates/cabecera_v3.*` | Cabecera v3 de **10 preguntas** (PNG 300 dpi, PDF vectorial). Igual que la v2 más una fila de cuadrícula (paso 6,8 mm) con P7..P10; los marcadores 2 y 3 y la tira de parches bajan a esa fila; marcadores 0, 1, 4 y 5, ID, F, nombre y fecha no cambian. La genera `generar_cabecera_v3.py`; la app la lee con la cabecera "10 preguntas" (`PLANTILLAS['10']`). |
 | `templates/plantilla_A4_horizontal.docx` | Documento Word compatible con Google Docs: A4 horizontal, cabecera v2 (sin la línea de instrucción) como imagen a 600 dpi en la sección de encabezado, escalada al ancho útil (287 mm), márgenes de 4 mm arriba y a los lados; el cuerpo lleva las preguntas de la plantilla como párrafos editables. Lo genera `generar_plantilla_docx.py` (python-docx). La cabecera escalada se reconoce igual: la app solo usa proporciones relativas a los marcadores. |
+| `templates/plantilla_A4_horizontal_10preguntas.docx` | Lo mismo con la cabecera v3 (10 preguntas) y un cuerpo con 10 preguntas de relleno (`1:` … `10:` con a) b) c) d)) para editar. `generar_plantilla_docx.py <png> <docx> --preguntas 10`. |
 | `templates/cabecera_v2.odg` | La cabecera v2 como dibujo editable de LibreOffice Draw (página A4, cada casillero/marcador/parche es una forma). Lo genera `generar_cabecera_v2_odg.py`; al editar, no mover casilleros, marcadores ni parches o habrá que recalibrar. |
 | `pruebas/` | Fotos reales con el resultado esperado en el nombre, `fotos.json` y `regresion.html` (página que las pasa por el pipeline y compara; ver `pruebas/README.md`). No se cachea sin conexión. |
 
@@ -74,6 +76,23 @@ Además: la interfaz y los comentarios del código están en **español**; mante
   conexión).
 - Regla de reparto: `deteccion.js` no toca el DOM; el DOM lo tocan las pantallas
   (`calificacion`, `calibracion`, `parametros`, `camara`) y `app.js`.
+
+## Cabeceras: 5 o 10 preguntas
+
+- El usuario elige la cabecera en la pestaña Escanear ("Cabecera de la
+  plantilla": 5 o 10 preguntas; `STATE.plantilla`, persistida en
+  `omr_plantilla_v1`). `aplicarPlantilla(id)` (en `js/estado.js`) fija lo que
+  depende de ella: `GEOM.RECT_H_MM` (24 / 31), `GEOM.M0_M2_MM` (13,80 / 20,60),
+  la `y` de los marcadores 2 y 3, `CALIBRATION_DEFAULT`, la `y` de los parches
+  (19,49 / 26,58) y las claves de `localStorage` de calibración y parches (cada
+  cabecera guarda las suyas). `seleccionarPlantilla(id)` (en `js/app.js`)
+  refresca las pantallas y vuelve a procesar la última foto.
+- Todo lo que itera preguntas usa `listaPreguntas()` / `gruposLectura()` /
+  `numPreguntas()`, nunca listas fijas `P1..P5`. Los escaneos guardan
+  `preguntas` (5 o 10); la tabla y el CSV muestran las de la cabecera en uso.
+- Las coordenadas de `PLANTILLAS['10']` salen de `templates/generar_cabecera_v3.py`
+  (marco: x − 1,56, y − 1,05). `pruebas/regresion.html` elige la cabecera por el
+  nombre de la foto (P1..P5 → 5; P1..P10 → 10).
 
 ## Cómo lee la hoja (y por qué hay anclaje)
 

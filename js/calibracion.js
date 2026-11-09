@@ -19,8 +19,9 @@ function renderCalibrationUI() {
   // Calculamos el "drift" como la suma absoluta de diferencias en x0/y/paso_x
   // a lo largo de todos los grupos, normalizada a "casilleros equivalentes".
   let drift = 0;
-  for (const g of ['D1','D2','F','P1','P2','P3','P4','P5']) {
+  for (const g of gruposLectura()) {
     const cur = CALIBRATION[g], def = CALIBRATION_DEFAULT[g];
+    if (!cur || !def) continue;
     drift += Math.abs(cur.x0 - def.x0) + Math.abs(cur.y - def.y) + Math.abs(cur.paso_x - def.paso_x);
   }
   drift += Math.abs((CALIBRATION.roi_size || 0) - CALIBRATION_DEFAULT.roi_size) * 2;
@@ -41,7 +42,7 @@ function renderCalibrationUI() {
   globalDiv.innerHTML = `
     <div class="calib-group-title">
       <span>Tamaño de casilleros</span>
-      <span class="desc">aplica a los 42</span>
+      <span class="desc">aplica a los ${COORDS.length} (cabecera de ${numPreguntas()} preguntas)</span>
     </div>
     ${calibRowHTML('GLOBAL', 'roi_size', 'Lado', CALIBRATION.roi_size)}
   `;
@@ -51,16 +52,15 @@ function renderCalibrationUI() {
     D1: { titulo: 'D1 — Primer dígito del ID', desc: '10 casilleros (0-9)' },
     D2: { titulo: 'D2 — Segundo dígito del ID', desc: '10 casilleros (0-9)' },
     F:  { titulo: 'F — Forma de la prueba',     desc: '2 casilleros (1-2)' },
-    P1: { titulo: 'P1 — Pregunta 1',            desc: '4 casilleros (A-D)' },
-    P2: { titulo: 'P2 — Pregunta 2',            desc: '4 casilleros (A-D)' },
-    P3: { titulo: 'P3 — Pregunta 3',            desc: '4 casilleros (A-D)' },
-    P4: { titulo: 'P4 — Pregunta 4',            desc: '4 casilleros (A-D)' },
-    P5: { titulo: 'P5 — Pregunta 5',            desc: '4 casilleros (A-D)' },
   };
+  for (const q of listaPreguntas()) {
+    grupoInfo[q] = { titulo: `${q} — Pregunta ${q.slice(1)}`, desc: '4 casilleros (A-D)' };
+  }
 
-  for (const grupo of ['D1','D2','F','P1','P2','P3','P4','P5']) {
+  for (const grupo of gruposLectura()) {
     const info = grupoInfo[grupo];
     const cfg = CALIBRATION[grupo];
+    if (!cfg) continue;
 
     const div = document.createElement('div');
     div.className = 'calib-group';

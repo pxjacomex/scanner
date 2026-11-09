@@ -271,6 +271,8 @@ body {
 .q-cell.dudoso { background: rgba(255,184,77,0.15); border-color: var(--warn); }
 .q-cell.dudoso .q-value { color: var(--warn); }
 .q-cell.empty .q-value { color: var(--text-muted); }
+.q-cell.bonus { border-style: dashed; }
+.q-cell.bonus .q-label { color: var(--warn); }
 
 /* ===== Score ===== */
 .score-display {
@@ -354,6 +356,31 @@ body {
   line-height: 1.4;
 }
 
+/* Selector segmentado (p. ej. cabecera de 5 o 10 preguntas en Escanear) */
+.segmented {
+  display: flex;
+  gap: 6px;
+}
+.seg-btn {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 10px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.seg-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+}
+
 /* Casilla con etiqueta (p. ej. "Opciones duplicadas" en la pestaña Clave) */
 .check-row {
   display: flex;
@@ -383,11 +410,33 @@ body {
 
 .answer-row {
   display: grid;
-  grid-template-columns: 60px repeat(4, 1fr);
+  grid-template-columns: 44px repeat(4, 1fr) auto;
   gap: 6px;
   margin-bottom: 6px;
   align-items: center;
 }
+/* BONUS: la pregunta cuenta como acierto para todos; las letras se atenúan */
+.answer-row .bonus-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px 0 6px;
+  min-height: 44px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.answer-row .bonus-check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--warn);
+}
+.answer-row.bonus .bonus-check { color: var(--warn); }
+.answer-row.bonus button { opacity: 0.35; }
 .answer-row .q-name {
   font-size: 13px;
   font-weight: 600;

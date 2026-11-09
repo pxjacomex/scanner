@@ -28,7 +28,12 @@ los guardados en el dispositivo, así el resultado es reproducible.
 Conviene incluir fotos difíciles (hoja doblada, poca luz, sombras, bolígrafo,
 lápiz suave): son las que detectan regresiones al cambiar el detector.
 
-Después de `P5_<r>` el nombre puede llevar un sufijo libre (por ejemplo
+Con la cabecera de **10 preguntas** el patrón sigue hasta `P10_<r>`
+(`..._P5_<r>_P6_<r>_…_P10_<r>`); la página elige la cabecera según el nombre
+tenga 5 o 10 preguntas. `generar_foto_sintetica_10p.py` fabrica la foto
+sintética de 10 preguntas a partir de `templates/cabecera_v3.pdf`.
+
+Después de la última `P<n>_<r>` el nombre puede llevar un sufijo libre (por ejemplo
 `_v2_doblada_sintetica`) para describir la foto. Las "sintéticas" se generan a
 partir del PDF de la plantilla con marcas y deformaciones simuladas; sirven
 para cubrir casos que aún no tienen foto real (como la cabecera v2 doblada por

@@ -41,7 +41,8 @@ cuadros impresos y sin él; con cabecera v2 se usa además la rectificación por
 <script>
   // Resultados accesibles para automatización: window.RESULTADOS = { listo, fotos: [...] }
   window.RESULTADOS = { listo: false, fotos: [] };
-  const CAMPOS = ['ID', 'F', 'P1', 'P2', 'P3', 'P4', 'P5'];
+  // Campos a comparar: ID, F y las preguntas de la cabecera de la foto
+  const camposDe = (esperado) => ['ID', 'F'].concat(Object.keys(esperado).filter(k => /^P\d+$/.test(k)));
 
   function mostrarEstado(txt, cls) {
     const el = document.getElementById('estado');
@@ -49,11 +50,28 @@ cuadros impresos y sin él; con cabecera v2 se usa además la rectificación por
   }
 
   // Resultado esperado a partir del nombre del archivo.
+  // Acepta P1..P5 (cabecera de 5 preguntas) o P1..P10 (cabecera de 10).
   function esperadoDesdeNombre(nombre) {
-    const m = nombre.match(/studentId_(\d+)_form_(\d)_P1_([^_]+)_P2_([^_]+)_P3_([^_]+)_P4_([^_]+)_P5_([^_.]+)/i);
+    const m = nombre.match(/studentId_(\d+)_form_(\d)/i);
     if (!m) return null;
     const norm = (v) => (v.toLowerCase() === 'null') ? null : (/^(amb|ambiguo|\?)$/i.test(v) ? 'AMBIGUO' : v.toUpperCase());
-    return { ID: m[1], F: m[2], P1: norm(m[3]), P2: norm(m[4]), P3: norm(m[5]), P4: norm(m[6]), P5: norm(m[7]) };
+    const out = { ID: m[1], F: m[2] };
+    const re = /_P(\d+)_([^_.]+)/gi;
+    let p;
+    while ((p = re.exec(nombre)) !== null) out['P' + p[1]] = norm(p[2]);
+    const n = Object.keys(out).filter(k => /^P\d+$/.test(k)).length;
+    if (n !== 5 && n !== 10) return null;
+    out.plantilla = n === 10 ? '10' : '5';
+    return out;
+  }
+
+  // Activa la cabecera de la foto con la calibración y los parches POR DEFECTO
+  // (no los guardados en el dispositivo), para que el resultado sea reproducible.
+  function usarPlantilla(id) {
+    aplicarPlantilla(id, { persistir: false });
+    CALIBRATION = JSON.parse(JSON.stringify(CALIBRATION_DEFAULT));
+    COORDS = buildCoords();
+    STATE.tonePatches = JSON.parse(JSON.stringify(TONE_PATCHES_DEFAULT));
   }
 
   function cargarImagen(url) {
@@ -73,9 +91,10 @@ cuadros impresos y sin él; con cabecera v2 se usa además la rectificación por
     const ms = Math.round(performance.now() - t0);
     if (!r.ok) return { ok: false, msg: r.msg, ms };
     const c = r.classification;
-    const out = { ok: true, ms, ID: c.ID, F: c.F, P1: c.P1, P2: c.P2, P3: c.P3, P4: c.P4, P5: c.P5, dudoso: c.dudoso,
+    const out = { ok: true, ms, ID: c.ID, F: c.F, dudoso: c.dudoso,
                   anclaje: STATE.anclaje ? JSON.parse(JSON.stringify(STATE.anclaje)) : null,
                   rectificacion: r.rectificacion ? JSON.parse(JSON.stringify(r.rectificacion)) : null };
+    for (const q of listaPreguntas()) out[q] = c[q];
     if (canvas) cv.imshow(canvas, r.rectified);
     r.rectified.delete(); r.rectifiedClean.delete(); r.grayRect.delete(); r.grayNorm.delete();
     return out;
@@ -87,9 +106,7 @@ cuadros impresos y sin él; con cabecera v2 se usa además la rectificación por
     STATE.cvReady = true;
     // Siempre valores por defecto (reproducible en cualquier dispositivo)
     STATE.detectorParams = JSON.parse(JSON.stringify(DETECTOR_PARAMS_DEFAULT));
-    STATE.tonePatches = JSON.parse(JSON.stringify(TONE_PATCHES_DEFAULT));
-    CALIBRATION = JSON.parse(JSON.stringify(CALIBRATION_DEFAULT));
-    COORDS = buildCoords();
+    usarPlantilla('5');
     const radioDefault = DETECTOR_PARAMS_DEFAULT.anclaje_mm;
 
     mostrarEstado('Cargando la lista de fotos…');
@@ -104,10 +121,13 @@ cuadros impresos y sin él; con cabecera v2 se usa además la rectificación por
       card.innerHTML = `<h2>${nombre}</h2>`;
       cont.appendChild(card);
       if (!esperado) {
-        card.innerHTML += `<div class="mal">El nombre no sigue el patrón studentId_.._form_.._P1_.._P5_..</div>`;
+        card.innerHTML += `<div class="mal">El nombre no sigue el patrón studentId_.._form_.._P1_.._P5_.. (o hasta P10)</div>`;
         window.RESULTADOS.fotos.push({ nombre, error: 'nombre' });
         continue;
       }
+      const CAMPOS = camposDe(esperado);
+      if (STATE.plantilla !== esperado.plantilla) { usarPlantilla(esperado.plantilla); window.__calentado = false; }
+      card.innerHTML += `<div class="nota">Cabecera de ${getPlantilla().nombre}</div>`;
       mostrarEstado(`Procesando ${nombre}…`);
       let img;
       try { img = await cargarImagen(nombre); }

@@ -11,15 +11,10 @@
 function initApp() {
   // Cargar parametros del detector (siempre, para tener defaults disponibles antes de cualquier scan)
   loadDetectorParams();
-  // Cargar el patrón de tonos (coords/tamaño/targets de los 4 parches)
-  STATE.tonePatches = loadTonePatches();
-
-  // Cargar calibracion guardada (si existe)
-  const cargada = loadCalibration();
-  if (cargada) {
-    COORDS = buildCoords();
-    console.log('Calibracion cargada de localStorage');
-  }
+  // Cabecera en uso (5 o 10 preguntas): fija la geometría y carga la calibración
+  // y el patrón de tonos guardados para esa cabecera (o sus valores por defecto)
+  aplicarPlantilla(loadPlantilla(), { persistir: false });
+  renderPlantillaUI();
 
   // Tabs
   document.querySelectorAll('.tab').forEach(t => {
@@ -52,6 +47,46 @@ function initApp() {
   renderTable();
 }
 
+
+// ============================================
+// CABECERA EN USO (5 o 10 preguntas)
+// ============================================
+// Refleja STATE.plantilla en la interfaz: selector, proporción del lienzo de
+// la foto y nota de la pestaña Clave.
+function renderPlantillaUI() {
+  const p = getPlantilla();
+  document.querySelectorAll('#plantillaSelector .seg-btn').forEach(b => {
+    const activo = b.dataset.plantilla === p.id;
+    b.classList.toggle('active', activo);
+    b.setAttribute('aria-checked', activo ? 'true' : 'false');
+  });
+  const preview = document.getElementById('preview');
+  if (preview) preview.style.aspectRatio = `${GEOM.RECT_W_MM} / ${GEOM.RECT_H_MM}`;
+  const nota = document.getElementById('claveNotaPlantilla');
+  if (nota) nota.textContent = `Cabecera de ${p.nombre} (se elige en la pestaña Escanear).`;
+}
+
+// Cambia la cabecera que lee el escáner y refresca todas las pantallas que
+// dependen de ella. Si hay una foto cargada, se vuelve a procesar con la nueva
+// geometría.
+function seleccionarPlantilla(id) {
+  if (!PLANTILLAS[id]) return;
+  if (id === STATE.plantilla) { renderPlantillaUI(); return; }
+  aplicarPlantilla(id);
+  renderPlantillaUI();
+  renderClaveOpciones();
+  renderClaveUI('1');
+  renderClaveUI('2');
+  renderCalibrationUI();
+  renderParamsUI();
+  recomputeAllScores();
+  renderTable();
+  // El escaneo en pantalla se leyó con la otra cabecera: se repite la lectura
+  // sobre la misma foto, o se descarta si no hay foto.
+  const reprocesado = reprocesarUltimaFoto();
+  if (!reprocesado && STATE.currentScan) discardScan();
+  toast(`Cabecera de ${PLANTILLAS[id].nombre}`, 'success');
+}
 
 function switchSection(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.section === name));

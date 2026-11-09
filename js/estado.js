@@ -18,12 +18,22 @@ const STATE = {
   // orden ("A", "AC"...) o null si no está definida. El estudiante acierta
   // con cualquiera de ellas; cada acierto vale 20 de 100 puntos.
   clave: {
-    "1": { P1: null, P2: null, P3: null, P4: null, P5: null },
-    "2": { P1: null, P2: null, P3: null, P4: null, P5: null }
+    "1": { P1: null, P2: null, P3: null, P4: null, P5: null, P6: null, P7: null, P8: null, P9: null, P10: null },
+    "2": { P1: null, P2: null, P3: null, P4: null, P5: null, P6: null, P7: null, P8: null, P9: null, P10: null }
   },
   // Casilla "Opciones duplicadas" (pestaña Clave): false = una sola opción por
   // pregunta (la nueva reemplaza a la anterior); true = se pueden dejar varias.
   claveOpcionesDuplicadas: false,
+  // BONUS por pregunta y formato: la pregunta cuenta como acierto para todos,
+  // marque lo que marque el estudiante (o aunque no marque nada).
+  bonus: {
+    "1": { P1: false, P2: false, P3: false, P4: false, P5: false, P6: false, P7: false, P8: false, P9: false, P10: false },
+    "2": { P1: false, P2: false, P3: false, P4: false, P5: false, P6: false, P7: false, P8: false, P9: false, P10: false }
+  },
+  // Cabecera en uso: '5' (cabecera v2, 5 preguntas) o '10' (cabecera v3, 10
+  // preguntas). Decide la geometría del marco, la calibración y los grupos que
+  // se leen (ver PLANTILLAS y aplicarPlantilla).
+  plantilla: '5',
   // Para resolver duplicado
   pendingScan: null,
   pendingResolver: null,
@@ -110,6 +120,10 @@ function loadClave() {
             STATE.clave[f][q] = Array.from(new Set(v.split(''))).sort().join('');
           }
         }
+        const bonus = parsed.bonus && parsed.bonus[f];
+        if (bonus && typeof bonus === 'object') {
+          for (const q of Object.keys(STATE.bonus[f])) STATE.bonus[f][q] = bonus[q] === true;
+        }
       }
       return true;
     }
@@ -121,7 +135,7 @@ function loadClave() {
 
 function persistClave() {
   try {
-    localStorage.setItem(STORAGE_KEY_CLAVE, JSON.stringify({ ...STATE.clave, opcionesDuplicadas: STATE.claveOpcionesDuplicadas }));
+    localStorage.setItem(STORAGE_KEY_CLAVE, JSON.stringify({ ...STATE.clave, opcionesDuplicadas: STATE.claveOpcionesDuplicadas, bonus: STATE.bonus }));
     return true;
   } catch (e) {
     console.warn('Error guardando la clave:', e);
@@ -213,42 +227,135 @@ const DEBUG = {
 };
 
 // ============================================
+// PLANTILLAS (CABECERAS) DISPONIBLES
+// ============================================
+// La app lee dos cabeceras: la v2 de 5 preguntas (templates/cabecera_v2.pdf) y la
+// v3 de 10 preguntas (templates/cabecera_v3.pdf), que añade una fila de
+// cuadrícula (paso 6.8 mm) con P7..P10 y baja los marcadores 2 y 3 y la tira de
+// parches a esa fila. Todo lo que depende de la cabecera se toma de aquí:
+// alto del marco, distancia M0-M2, calibración por defecto, posición de los
+// parches y claves de localStorage (cada cabecera guarda su propia calibración).
+// Las coordenadas están derivadas del PDF (ver templates/generar_cabecera_v*.py):
+// casilleros de 4.0 mm cada 6.8 mm, convertidos al marco con x - 1.56, y - 1.05.
+const PLANTILLAS = {
+  '5': {
+    id: '5', nombre: '5 preguntas', preguntas: 5,
+    rect_h_mm: 24, m0_m2_mm: 13.80, parches_y_mm: 19.49,
+    calibracion: {
+      D1: { x0: 15.44,  y: 12.95, paso_x: 6.80 },
+      D2: { x0: 15.44,  y: 19.75, paso_x: 6.80 },
+      F:  { x0: 185.54, y: 4.65,  paso_x: 6.80 },
+      P1: { x0: 95.23,  y: 12.98, paso_x: 6.80 },
+      P2: { x0: 95.23,  y: 19.78, paso_x: 6.80 },
+      P3: { x0: 133.63, y: 12.98, paso_x: 6.80 },
+      P4: { x0: 133.63, y: 19.78, paso_x: 6.80 },
+      P5: { x0: 172.04, y: 13.00, paso_x: 6.80 },
+      // Tamaño común de todos los casilleros (lado del cuadrado, en mm). El cuadro
+      // impreso mide 4.0 mm; 4.2 deja 0.1 mm de holgura por lado.
+      roi_size: 4.2,
+    },
+    // v2 = marco en mm reales (las calibraciones guardadas con el marco antiguo no sirven)
+    storage_calib: 'omr_calibration_v2',
+    storage_tonos: 'omr_tone_patches_v3',
+  },
+  '10': {
+    id: '10', nombre: '10 preguntas', preguntas: 10,
+    rect_h_mm: 31, m0_m2_mm: 20.60, parches_y_mm: 26.58,
+    calibracion: {
+      D1: { x0: 15.44,  y: 12.95, paso_x: 6.80 },
+      D2: { x0: 15.44,  y: 19.75, paso_x: 6.80 },
+      F:  { x0: 185.54, y: 4.65,  paso_x: 6.80 },
+      P1: { x0: 95.23,  y: 12.98, paso_x: 6.80 },
+      P2: { x0: 133.63, y: 12.98, paso_x: 6.80 },
+      P3: { x0: 172.04, y: 12.98, paso_x: 6.80 },
+      P4: { x0: 95.23,  y: 19.78, paso_x: 6.80 },
+      P5: { x0: 133.63, y: 19.78, paso_x: 6.80 },
+      P6: { x0: 172.04, y: 19.78, paso_x: 6.80 },
+      P7: { x0: 22.24,  y: 26.58, paso_x: 6.80 },
+      P8: { x0: 56.24,  y: 26.58, paso_x: 6.80 },
+      P9: { x0: 95.23,  y: 26.58, paso_x: 6.80 },
+      P10: { x0: 133.63, y: 26.58, paso_x: 6.80 },
+      roi_size: 4.2,
+    },
+    storage_calib: 'omr_calibration_10p_v1',
+    storage_tonos: 'omr_tone_patches_10p_v1',
+  },
+};
+const STORAGE_KEY_PLANTILLA = 'omr_plantilla_v1';
+
+function getPlantilla() {
+  return PLANTILLAS[STATE.plantilla] || PLANTILLAS['5'];
+}
+function numPreguntas() {
+  return getPlantilla().preguntas;
+}
+// ['P1', ..., 'Pn'] de la cabecera en uso
+function listaPreguntas() {
+  const n = numPreguntas();
+  const out = [];
+  for (let i = 1; i <= n; i++) out.push(`P${i}`);
+  return out;
+}
+// Grupos de casilleros que se leen, en orden: ['D1','D2','F','P1',...,'Pn']
+function gruposLectura() {
+  return ['D1', 'D2', 'F'].concat(listaPreguntas());
+}
+
+function loadPlantilla() {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY_PLANTILLA);
+    if (v && PLANTILLAS[v]) return v;
+  } catch (_) {}
+  return '5';
+}
+
+// Activa una cabecera: ajusta GEOM, carga su calibración y sus parches (los
+// guardados para esa cabecera, o los valores por defecto) y recalcula COORDS.
+// No toca el DOM; las pantallas se refrescan desde app.js (seleccionarPlantilla).
+function aplicarPlantilla(id, opciones) {
+  const persistir = !opciones || opciones.persistir !== false;
+  STATE.plantilla = PLANTILLAS[id] ? id : '5';
+  const p = getPlantilla();
+  GEOM.RECT_H_MM = p.rect_h_mm;
+  GEOM.M0_M2_MM = p.m0_m2_mm;
+  GEOM.H_PX = Math.round(GEOM.RECT_H_MM * GEOM.PX_PER_MM);
+  GEOM.MARCADORES_MM[2].y = GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM;
+  GEOM.MARCADORES_MM[3].y = GEOM.OFFSET_Y_MM + GEOM.M0_M2_MM;
+  CALIBRATION_DEFAULT = JSON.parse(JSON.stringify(p.calibracion));
+  TONE_PATCHES_DEFAULT = tonePatchesDefault(p);
+  CALIBRATION = JSON.parse(JSON.stringify(CALIBRATION_DEFAULT));
+  loadCalibration();
+  COORDS = buildCoords();
+  STATE.tonePatches = loadTonePatches();
+  // Lo anclado al último escaneo pertenece a la otra cabecera
+  STATE.coordsLectura = null;
+  STATE.anclaje = null;
+  if (persistir) {
+    try { localStorage.setItem(STORAGE_KEY_PLANTILLA, STATE.plantilla); } catch (_) {}
+  }
+  return p;
+}
+
+// ============================================
 // SISTEMA DE CALIBRACION
 // ============================================
 // Estructura: cada grupo tiene un x0 (primer casillero), una y comun, un paso x.
 // Tambien hay un parametro global roi_size que afecta a TODOS los casilleros.
 // Las coordenadas individuales se derivan de estos parametros.
-// Valores derivados de la plantilla (templates/plantilla_A4.pdf, misma geometría
-// en v1 y v2): casilleros de 4.0 mm cada 6.8 mm; filas en y = 14.00/20.80 mm de
-// página (código) y 14.03/20.83 (preguntas); F en y = 5.70. Convertidos al marco
-// con x - 1.56, y - 1.05 (ver GEOM).
-const CALIBRATION_DEFAULT = {
-  D1: { x0: 15.44,  y: 12.95, paso_x: 6.80 },
-  D2: { x0: 15.44,  y: 19.75, paso_x: 6.80 },
-  F:  { x0: 185.54, y: 4.65,  paso_x: 6.80 },
-  P1: { x0: 95.23,  y: 12.98, paso_x: 6.80 },
-  P2: { x0: 95.23,  y: 19.78, paso_x: 6.80 },
-  P3: { x0: 133.63, y: 12.98, paso_x: 6.80 },
-  P4: { x0: 133.63, y: 19.78, paso_x: 6.80 },
-  P5: { x0: 172.04, y: 13.00, paso_x: 6.80 },
-  // Tamaño común de todos los casilleros (lado del cuadrado, en mm). El cuadro
-  // impreso mide 4.0 mm; 4.2 deja 0.1 mm de holgura por lado.
-  roi_size: 4.2,
-};
+// Los valores por defecto dependen de la cabecera en uso (PLANTILLAS); aquí
+// arrancan con la de 5 preguntas y aplicarPlantilla() los sustituye.
+let CALIBRATION_DEFAULT = JSON.parse(JSON.stringify(PLANTILLAS['5'].calibracion));
 
 // Calibracion activa (cargada de localStorage al inicio, o default)
 let CALIBRATION = JSON.parse(JSON.stringify(CALIBRATION_DEFAULT));
 
-// v2 = marco en mm reales (las calibraciones guardadas con el marco antiguo no sirven)
-const STORAGE_KEY_CALIB = 'omr_calibration_v2';
-
 function loadCalibration() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_CALIB);
+    const stored = localStorage.getItem(getPlantilla().storage_calib);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Validar que tenga los grupos esperados
-      const ok = ['D1','D2','F','P1','P2','P3','P4','P5'].every(k =>
+      // Validar que tenga los grupos esperados por la cabecera en uso
+      const ok = gruposLectura().every(k =>
         parsed[k] && typeof parsed[k].x0 === 'number' &&
         typeof parsed[k].y === 'number' && typeof parsed[k].paso_x === 'number'
       );
@@ -269,7 +376,7 @@ function loadCalibration() {
 
 function persistCalibration() {
   try {
-    localStorage.setItem(STORAGE_KEY_CALIB, JSON.stringify(CALIBRATION));
+    localStorage.setItem(getPlantilla().storage_calib, JSON.stringify(CALIBRATION));
     return true;
   } catch (e) {
     console.warn('Error guardando calibracion:', e);
@@ -277,7 +384,8 @@ function persistCalibration() {
   }
 }
 
-// Genera las 42 coordenadas a partir de la calibracion actual
+// Genera las coordenadas de todos los casilleros (42 con 5 preguntas, 62 con
+// 10) a partir de la calibracion actual
 function buildCoords() {
   const coords = [];
   const D1 = CALIBRATION.D1;
@@ -290,8 +398,9 @@ function buildCoords() {
     coords.push({ id: `D2_${i}`, x: D2.x0 + i * D2.paso_x, y: D2.y, grupo: 'ID' });
   }
   const letras = ['A','B','C','D'];
-  for (const q of ['P1','P2','P3','P4','P5']) {
+  for (const q of listaPreguntas()) {
     const cfg = CALIBRATION[q];
+    if (!cfg) continue;
     for (let i = 0; i < 4; i++) {
       coords.push({ id: `${q}_${letras[i]}`, x: cfg.x0 + i * cfg.paso_x, y: cfg.y, grupo: 'P' });
     }
@@ -327,12 +436,15 @@ function getRoiHalfPx() {
 // Antes se usaban 194.9 y 11.85 (medidos sobre fotos), lo que comprimía el
 // marco un 1 % en X y un 14 % en Y; todas las coordenadas por defecto de abajo
 // están derivadas ya con el marco real.
+// RECT_H_MM, M0_M2_MM, H_PX y la y de los marcadores 2 y 3 dependen de la
+// cabecera (24 / 13.80 mm con 5 preguntas; 31 / 20.60 mm con 10) y los fija
+// aplicarPlantilla(); el resto es común a las dos cabeceras.
 const GEOM = {
   PX_PER_MM: 15,
   OFFSET_X_MM: 5, OFFSET_Y_MM: 5,
   RECT_W_MM: 207, RECT_H_MM: 24,
   M0_M1_MM: 196.77,   // distancia entre centros M0 y M1 (PDF)
-  M0_M2_MM: 13.80,    // distancia entre centros M0 y M2 (PDF)
+  M0_M2_MM: 13.80,    // distancia entre centros M0 y M2 (PDF, cabecera de 5 preguntas)
   ROI_SIZE_MM: 4.2,
 };
 GEOM.W_PX = Math.round(GEOM.RECT_W_MM * GEOM.PX_PER_MM);
@@ -366,7 +478,10 @@ GEOM.TOL_MARCADOR_CENTRAL_MM = 15;
 // VALORES POR DEFECTO (calibrados con la plantilla de referencia).
 // El usuario puede ajustarlos mediante la pestaña Detector y se persisten
 // junto a los demás parámetros del detector.
-const TONE_PATCHES_DEFAULT = {
+// La y de los parches depende de la cabecera (fila 2 con 5 preguntas, fila 3 con
+// 10): tonePatchesDefault() la toma de PLANTILLAS y aplicarPlantilla() sustituye
+// TONE_PATCHES_DEFAULT.
+const TONE_PATCHES_BASE = {
   // Coordenadas en mm (centro del parche en el espacio rectificado)
   // Derivadas de la plantilla: tira de 4 bandas de 6.225 mm desde x = 171.40 mm
   // de página, centro vertical en y = 20.54 (v1: 4.9 mm de alto; v2: 6.4 mm).
@@ -403,16 +518,19 @@ const TONE_PATCHES_DEFAULT = {
   // contaminado/oculto y se levanta una bandera de calibración sospechosa.
   monotonia_min_delta: 5,
 };
+function tonePatchesDefault(plantilla) {
+  const d = JSON.parse(JSON.stringify(TONE_PATCHES_BASE));
+  for (const c of d.coords) c.y = plantilla.parches_y_mm;
+  return d;
+}
+let TONE_PATCHES_DEFAULT = tonePatchesDefault(PLANTILLAS['5']);
 
 // La estructura "viva" se mantiene en STATE.tonePatches para poder ajustarla.
 // Se inicializa con el default, se sobreescribe desde localStorage si hay
-// una versión persistida.
-// v3 = marco en mm reales (ver GEOM)
-const STORAGE_KEY_TONE_PATCHES = 'omr_tone_patches_v3';
-
+// una versión persistida (clave propia de cada cabecera; v3 = marco en mm reales).
 function loadTonePatches() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_TONE_PATCHES);
+    const stored = localStorage.getItem(getPlantilla().storage_tonos);
     if (stored) {
       const parsed = JSON.parse(stored);
       const merged = JSON.parse(JSON.stringify(TONE_PATCHES_DEFAULT));
@@ -440,7 +558,7 @@ function loadTonePatches() {
 
 function persistTonePatches() {
   try {
-    localStorage.setItem(STORAGE_KEY_TONE_PATCHES, JSON.stringify(STATE.tonePatches));
+    localStorage.setItem(getPlantilla().storage_tonos, JSON.stringify(STATE.tonePatches));
     return true;
   } catch (e) {
     console.warn('Error guardando tone patches:', e);

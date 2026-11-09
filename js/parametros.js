@@ -289,13 +289,11 @@ function renderAllParamPreviews() {
   }
 }
 
-const GRUPOS_ORDEN = ['D1','D2','F','P1','P2','P3','P4','P5'];
-
 // Helper: lista todas las celdas con su feature, ordenadas por grupo
 function listarTodasLasCeldas() {
   const grupos = buildGroups();
   const out = [];
-  for (const grupo of GRUPOS_ORDEN) {
+  for (const grupo of gruposLectura()) {
     for (const m of grupos[grupo]) {
       const f = DEBUG.features[m.id];
       out.push({ grupo, etiqueta: m.etiqueta, id: m.id, feat: f });
@@ -416,7 +414,7 @@ function buildPreviewFracMulti(el, path) {
 
   let html = `<div class="pv-title">Bloques con 2+ celdas sobre el umbral (${(umbral*100).toFixed(0)}%)</div>`;
   html += `<div class="pv-blocks">`;
-  for (const grupo of GRUPOS_ORDEN) {
+  for (const grupo of gruposLectura()) {
     if (!det[grupo]) continue;
     const sobreUmbral = det[grupo].scores.filter(s => s.frac_oscura >= umbral);
     let estado = 'pv-block-empty', icono = '–';
@@ -817,7 +815,7 @@ function buildPreviewAnclaje(el, path) {
   }
   const signo = (v) => (v >= 0 ? '+' : '') + v.toFixed(2);
   let filas = '';
-  for (const g of ['D1', 'D2', 'F', 'P1', 'P2', 'P3', 'P4', 'P5']) {
+  for (const g of gruposLectura()) {
     const r = a.porGrupo[g];
     if (!r) continue;
     const desp = Math.hypot(r.dx_mm, r.dy_mm);
@@ -874,8 +872,7 @@ function reclassifyLive() {
     const qCont = document.getElementById(idQ);
     if (qCont) {
       qCont.innerHTML = '';
-      for (let i = 1; i <= 5; i++) {
-        const q = `P${i}`;
+      for (const q of listaPreguntas()) {
         const v = classification[q];
         const cell = document.createElement('div');
         cell.className = 'params-q-cell';
@@ -905,11 +902,7 @@ function reclassifyLive() {
   if (STATE.currentScan) {
     STATE.currentScan.ID = classification.ID;
     STATE.currentScan.F  = classification.F;
-    STATE.currentScan.P1 = classification.P1;
-    STATE.currentScan.P2 = classification.P2;
-    STATE.currentScan.P3 = classification.P3;
-    STATE.currentScan.P4 = classification.P4;
-    STATE.currentScan.P5 = classification.P5;
+    for (const q of listaPreguntas()) STATE.currentScan[q] = classification[q];
     STATE.currentScan.dudoso = classification.dudoso;
     STATE.currentScan.ambiguos = classification.ambiguos;
     // Sólo re-renderizamos el panel de scan si está visible
