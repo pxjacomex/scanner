@@ -314,6 +314,8 @@ function renderScanResult() {
         const decision = DEBUG.classification.decisiones[grupo];
         const decStr = decision === null ? 'vacío' : decision;
         txt += `  ${grupo}: ${decStr}`;
+        const pc = det[grupo].porContraste;
+        if (pc) txt += ` [marca suave: ${pc.contraste.toFixed(0)} niveles más oscura que su fila]`;
         txt += ` (1°:${ganador.etiqueta}=${(ganador.frac_oscura*100).toFixed(1)}%`;
         if (segundo.etiqueta) txt += `, 2°:${segundo.etiqueta}=${(segundo.frac_oscura*100).toFixed(1)}%`;
         txt += `)\n`;

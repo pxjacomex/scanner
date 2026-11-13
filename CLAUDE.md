@@ -126,6 +126,20 @@ Además: la interfaz y los comentarios del código están en **español**; mante
 - Parámetro `anclaje_mm` (Detector → "③ Anclaje"): radio de búsqueda en X; 0 lo
   desactiva y la app vuelve a leer exactamente como antes. Al mover sliders de
   calibración o del detector se vuelve a anclar (`reanclar()`).
+- El radio (6 mm) alcanza a correr una fila una columna entera (paso 6,8 mm).
+  Para que eso no empate con la alineación correcta, las casillas **pintadas**
+  también cuentan como cuadros (`q.relleno`; se descartan las formas rellenas
+  de más de 1,12 × casillero o a menos de 3,5 mm de un marcador ArUco) y, a
+  igual número de celdas, gana el menor `distancia + 0,5 × desplazamiento`
+  (`ANCLAJE.PENALIZACION_DESPLAZAMIENTO`). Caso real: P3 y P6 con la D pintada
+  se leían en la columna vecina.
+- Grupos obligatorios (dígitos del ID y F): si ninguna casilla llega a
+  `frac_min_pintada`, `marcaPorContraste` acepta la de gris medio más bajo
+  cuando queda al menos `contraste_obligatorio` (20) niveles por debajo de la
+  mediana del resto de la fila y la segunda no baja ni la mitad (Detector → ⑥;
+  0 lo desactiva). Rescata dígitos rellenados con trazo suave (caso real: 6 %
+  de píxeles oscuros, 33 niveles más oscuro que su fila). El debug lo indica
+  como "marca suave".
 - Para comprobar cambios en el detector, abrir `pruebas/regresion.html`: pasa
   las fotos de `pruebas/fotos.json` con y sin anclaje y compara con el nombre.
   Añadir ahí cualquier foto problemática (convención de nombre en
