@@ -594,16 +594,24 @@ function annotateRectified(rect, classification, features) {
   }
 }
 
+// Grosor (px de la imagen rectificada, 15 px/mm) del recuadro de las celdas
+// detectadas (verde) o dudosas (amarillo). La imagen mide ~3100 px de ancho y
+// en el teléfono se ve a ~350 px (escala ~1/9): con 10 px el trazo queda en
+// ~1 px de pantalla; con el valor anterior (2 px) apenas se veía.
+const GROSOR_RECUADRO_PX = 10;
+
 function drawROIBox(rect, roiId, color) {
   const c = getCoordsLectura().find(x => x.id === roiId);
   if (!c) return;
-  const halfPx = getRoiHalfPx();
+  // El trazo se dibuja por FUERA del casillero (el borde de OpenCV queda
+  // centrado en la línea), para no tapar la marca del estudiante.
+  const halfPx = getRoiHalfPx() + Math.ceil(GROSOR_RECUADRO_PX / 2);
   const cx = Math.round(c.x * GEOM.PX_PER_MM);
   const cy = Math.round(c.y * GEOM.PX_PER_MM);
   cv.rectangle(rect,
     new cv.Point(cx - halfPx, cy - halfPx),
     new cv.Point(cx + halfPx, cy + halfPx),
-    color, 2);
+    color, GROSOR_RECUADRO_PX);
 }
 
 
