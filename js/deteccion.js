@@ -576,14 +576,20 @@ function annotateRectified(rect, classification, features) {
   };
   for (const q of listaPreguntas()) ganadores[q] = classification[q];
 
+  // Dudosos en amarillo. Las preguntas ambiguas llegan como 'AMBIGUO' y el ID
+  // o la forma como '?': en ambos casos se resaltan las casillas que cuentan
+  // como marcadas (fracción oscura >= frac_multi); si no hay ninguna (p. ej.
+  // un dígito del ID en blanco), todas las del grupo.
+  const P = STATE.detectorParams || DETECTOR_PARAMS_DEFAULT;
+  const detalles = classification.detalles || {};
   for (const grupo in ganadores) {
     const valor = ganadores[grupo];
-    if (!valor || valor === '?') {
-      // Marcar todos los del grupo como dudosos
+    if (!valor || valor === '?' || valor === 'AMBIGUO') {
       if (classification.ambiguos.includes(grupo)) {
-        for (const m of grupos[grupo]) {
-          drawROIBox(rect, m.id, [255, 184, 77, 255]);  // amarillo
-        }
+        const scores = (detalles[grupo] && detalles[grupo].scores) || [];
+        const marcadas = scores.filter(sc => sc.frac_oscura >= P.frac_multi).map(sc => sc.id);
+        const ids = marcadas.length ? marcadas : grupos[grupo].map(m => m.id);
+        for (const id of ids) drawROIBox(rect, id, [255, 184, 77, 255]);  // amarillo
       }
       continue;
     }
