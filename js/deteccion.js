@@ -480,6 +480,22 @@ function buildGroups() {
   return grupos;
 }
 
+// Marca suave en un grupo obligatorio: la celda de gris medio más bajo, si
+// queda al menos `contraste` niveles por debajo de la mediana del resto de la
+// fila y la segunda más oscura no baja ni la mitad de eso. Devuelve
+// { etiqueta, contraste, segundo } o null.
+function marcaPorContraste(scores, contraste) {
+  if (!(contraste > 0) || scores.length < 2) return null;
+  const porGris = scores.slice().sort((a, b) => a.mean_gris - b.mean_gris);
+  const win = porGris[0], resto = porGris.slice(1).map(s => s.mean_gris).sort((a, b) => a - b);
+  const mediana = resto.length % 2 ? resto[(resto.length - 1) / 2]
+    : (resto[resto.length / 2 - 1] + resto[resto.length / 2]) / 2;
+  const c1 = mediana - win.mean_gris;           // contraste de la candidata
+  const c2 = mediana - porGris[1].mean_gris;    // contraste de la segunda
+  if (c1 >= contraste && c2 <= c1 / 2) return { etiqueta: win.etiqueta, contraste: c1, segundo: c2 };
+  return null;
+}
+
 function classify(features) {
   if (!STATE.detectorParams) {
     STATE.detectorParams = JSON.parse(JSON.stringify(DETECTOR_PARAMS_DEFAULT));
@@ -515,8 +531,15 @@ function classify(features) {
 
     // Lógica de decisión simplificada:
     // 1) Si la celda más oscura no llega al umbral mínimo -> bloque vacío
+    //    (en los obligatorios, antes se prueba la marca suave por contraste)
     if (ganador.frac_oscura < FRAC_MIN_PINTADA) {
-      decisiones[grupo] = esObligatorio ? 'AMBIGUO' : null;
+      const suave = esObligatorio ? marcaPorContraste(scores, P.contraste_obligatorio) : null;
+      if (suave) {
+        decisiones[grupo] = suave.etiqueta;
+        detalles[grupo].porContraste = suave;
+      } else {
+        decisiones[grupo] = esObligatorio ? 'AMBIGUO' : null;
+      }
       continue;
     }
     // 2) Si la SEGUNDA celda también supera el umbral de múltiple -> AMBIGUO
@@ -646,6 +669,9 @@ const ANCLAJE = {
   UMBRAL_C: 12,            // adaptiveThreshold: constante restada
   PARCHE_SCORE_MIN: 0.6,   // correlación mínima para aceptar la posición de la tira
   INTERIOR_MIN_FRAC: 0.7,  // interior del cuadro >= 70 % del nivel del papel (si no, es una forma rellena)
+  RELLENO_MAX_FRAC: 1.12,  // casilla pintada: lado <= 1.12 × casillero (un marcador de 5 mm mide 1.19)
+  MARCADOR_EXCLUSION_MM: 3.5, // formas rellenas a menos de esto de un marcador ArUco no son casillas
+  PENALIZACION_DESPLAZAMIENTO: 0.5, // desempate: mm de "distancia" por mm de desplazamiento de la fila
 };
 
 // Nivel de gris del papel: mediana de una muestra de píxeles (barato).
@@ -687,8 +713,17 @@ function detectarCuadrosImpresos(grayRect) {
     const interior = grayRect.roi(new cv.Rect(ix, iy, iw, ih));
     const mediaInterior = cv.mean(interior)[0];
     interior.delete();
-    if (mediaInterior < umbralInterior) continue;
     const q = { x: (b.x + b.width / 2) / PX, y: (b.y + b.height / 2) / PX, w: b.width / PX, h: b.height / PX };
+    if (mediaInterior < umbralInterior) {
+      // Interior oscuro: casilla pintada o marcador ArUco. La casilla pintada
+      // también es un ancla válida (sin ella, en una fila de 4 con la marca en
+      // un extremo, correr la fila una columna entera coincide con los mismos
+      // cuadros). Los marcadores (5-6 mm) se descartan por tamaño y por estar
+      // donde la rectificación los coloca.
+      const cerca = Object.values(GEOM.MARCADORES_MM).some(m => Math.hypot(m.x - q.x, m.y - q.y) < ANCLAJE.MARCADOR_EXCLUSION_MM);
+      if (cerca || b.width > lado * ANCLAJE.RELLENO_MAX_FRAC || b.height > lado * ANCLAJE.RELLENO_MAX_FRAC) continue;
+      q.relleno = true;
+    }
     if (!cuadros.some(u => Math.hypot(u.x - q.x, u.y - q.y) < ANCLAJE.DEDUP_MM)) cuadros.push(q);
   }
   contours.delete(); hier.delete(); bin.delete();
@@ -724,7 +759,13 @@ function anclarCasillas(grayRect, coords, radioMm) {
     // Mínimo de celdas con cuadro para fiarse del desplazamiento (evita que un
     // contorno suelto desplace toda la fila).
     const minN = celdas.length >= 10 ? 3 : (celdas.length >= 4 ? 2 : 1);
-    let best = { n: 0, dist: Infinity, dx: 0, dy: 0 };
+    // Gana el desplazamiento con más celdas sobre un cuadro; a igualdad, el de
+    // menor costo = distancia celda↔cuadro + penalización por alejarse de la
+    // posición calibrada. Sin la penalización, una fila corrida una columna
+    // entera (paso 6.8 mm, alcanzable con el radio de 6 mm) podía empatar con
+    // la correcta y ganarla (caso real: P3 y P6 leídas en la columna vecina).
+    const PEN = ANCLAJE.PENALIZACION_DESPLAZAMIENTO;
+    let best = { n: 0, costo: Infinity, dx: 0, dy: 0 };
     if (cand.length) {
       for (let dx = -radioMm; dx <= radioMm + 1e-9; dx += PASO) {
         for (let dy = -radioY; dy <= radioY + 1e-9; dy += PASO) {
@@ -733,7 +774,8 @@ function anclarCasillas(grayRect, coords, radioMm) {
             const d = masCercano(cand, c.x + dx, c.y + dy).d;
             if (d < TOL) { n++; dist += d; }
           }
-          if (n > best.n || (n === best.n && n > 0 && dist < best.dist)) best = { n, dist, dx, dy };
+          const costo = dist + PEN * (Math.abs(dx) + Math.abs(dy));
+          if (n > best.n || (n === best.n && n > 0 && costo < best.costo)) best = { n, costo, dx, dy };
         }
       }
     }

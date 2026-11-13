@@ -164,6 +164,16 @@ const DETECTOR_PARAMS_DEFAULT = {
   // se considera que hay 2+ marcas y la respuesta sale AMBIGUA.
   frac_multi: 0.25,
 
+  // Marca suave en los grupos obligatorios (dígitos del ID y forma F), donde
+  // siempre hay exactamente una casilla marcada: si ninguna llega a
+  // frac_min_pintada, se acepta la más oscura cuando su gris medio queda al
+  // menos estos niveles por debajo de la mediana del resto de la fila y no
+  // hay otra parecida (la 2ª más oscura no baja ni la mitad). Caso real: un
+  // dígito rellenado con trazo suave de bolígrafo azul quedó en 6 % de
+  // píxeles oscuros pero 33 niveles más oscuro que su fila (vacías: ±6).
+  // 0 = desactivado (vuelve a salir "?").
+  contraste_obligatorio: 20,
+
   // Margen interno del ROI: porcentaje del lado que se descarta del borde
   // para no incluir el contorno impreso del casillero.
   roi_margin_pct: 0.20,
